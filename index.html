@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#fbf7ef">
 <title>엽떡스쿨 — 수업에 바로 쓰는 바이브코딩 앱</title>
 <meta name="description" content="엽쌤스쿨과 찰떡쌤이 만든 수업, 학급 운영, 교사 업무용 바이브코딩 앱 모음">
-<link rel="stylesheet" href="./assets/styles.css?v=2">
-<script defer src="./assets/catalog-data.js?v=2"></script>
-<script defer src="./assets/catalog.js?v=2"></script>
+<link rel="stylesheet" href="./assets/styles.css?v=3">
+<script defer src="./assets/catalog-data.js?v=3"></script>
+<script defer src="./assets/catalog.js?v=3"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -37,12 +37,15 @@
   <section class="catalog" id="catalog" aria-labelledby="catalog-title">
     <div class="catalog-head">
       <h2 id="catalog-title">앱 찾아보기</h2>
-      <form class="search" id="search-form" role="search">
-        <span class="magnifier" aria-hidden="true"></span>
-        <label class="sr-only" for="search">앱 이름이나 활용 키워드 검색</label>
-        <input id="search" type="search" maxlength="80" placeholder="앱 이름 또는 키워드 (예: 5학년 역사)" autocomplete="off" enterkeyhint="search">
-        <button id="clear" class="clear" type="button" aria-label="검색어 지우기" hidden>×</button>
-      </form>
+      <div class="catalog-search">
+        <form class="search" id="search-form" role="search">
+          <span class="magnifier" aria-hidden="true"></span>
+          <label class="sr-only" for="search">앱 이름이나 수업 상황 검색</label>
+          <input id="search" type="search" maxlength="80" placeholder="앱 이름·수업 상황 (예: 5학년 역사)" autocomplete="off" enterkeyhint="search">
+          <button id="clear" class="clear" type="button" aria-label="검색어 지우기" hidden>×</button>
+        </form>
+        <div class="situation-search" id="situation-search" role="group" aria-label="수업 상황으로 검색"></div>
+      </div>
     </div>
     <section class="quick-apps" id="quick-apps" aria-labelledby="quick-title" hidden>
       <h3 id="quick-title">자주 쓰는 앱</h3>
@@ -58,10 +61,11 @@
           <select id="topics" class="topic-select"></select>
         </div>
       </div>
+      <button id="student-filter" class="filter" type="button" aria-pressed="false">학생 링크 있는 앱</button>
       <button id="favorite-filter" class="filter" type="button" aria-pressed="false">★ 즐겨찾기</button>
     </div>
     <div class="selection">
-      <p id="results" role="status"></p>
+      <p id="results" role="status" tabindex="-1"></p>
       <button type="button" class="reset-link" id="reset" hidden>조건 초기화</button>
     </div>
     <p id="favorite-status" class="sr-only" role="status"></p>
@@ -175,7 +179,10 @@
     <div class="guidance-tags" hidden></div>
     <div class="card-foot">
       <p class="link-notice" hidden></p>
-      <p class="access" hidden></p>
+      <div class="card-access" hidden>
+        <a class="student-link" target="_blank" rel="noopener noreferrer" hidden>학생용 링크</a>
+        <p class="access" hidden></p>
+      </div>
       <div class="card-actions">
         <a class="primary" target="_blank" rel="noopener noreferrer"></a>
         <button class="secondary card-detail" type="button" aria-haspopup="dialog">활용 보기</button>

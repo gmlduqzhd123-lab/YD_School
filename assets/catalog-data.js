@@ -341,7 +341,7 @@ const apps = [
       "학급 운영"
     ],
     "desc": "초등 3~6학년 친구사랑 수업을 위한 모둠 방탈출 게임",
-    "access": "3~6학년 · 웹앱",
+    "access": "3~6학년 · 모둠당 기기 1대 · 웹앱",
     "note": "원본에서 모둠별 진행 방법을 확인하세요.",
     "tip": "모둠에서 단서를 읽는 사람과 의견을 모으는 사람을 나눠 보세요.",
     "keys": [
@@ -774,7 +774,7 @@ const apps = [
       "바이브코딩"
     ],
     "desc": "12개 미션으로 바이브코딩의 요청, 실행, 수정 과정을 체험하는 앱",
-    "access": "웹앱",
+    "access": "웹앱 · 학생 모드 가입 없이 시작",
     "note": "자세한 이용 조건은 원본 앱에서 확인하세요.",
     "tip": "미션 결과를 보고 학생 각자가 수정할 요청을 한 문장으로 다시 써 보세요.",
     "keys": [
@@ -1552,4 +1552,42 @@ const studentQRs = {
   "history": "./assets/qr-history.png",
   "vibe-for-u": "./assets/qr-vibe-for-u.png",
   "code-cart": "./assets/qr-code-cart.png"
+};
+
+const classroomSituations = [
+  {
+    label: "수업 도입",
+    keywords: ["도입 활동", "흥미 유발", "수업 시작"],
+    appIds: ["history", "fire-safety", "halloween", "volleyball", "everything-class"],
+    quickSearch: true
+  },
+  {
+    label: "단원 복습",
+    keywords: ["단원 정리", "수업 마무리", "복습 퀴즈"],
+    appIds: ["math-studio", "math-survival", "history", "bingo", "math-marvel", "volleyball"],
+    quickSearch: true
+  },
+  {
+    label: "발표자 뽑기",
+    keywords: ["발표 순서", "발표자 추첨", "학생 뽑기"],
+    appIds: ["rollin-thunder", "runrun"],
+    quickSearch: true
+  },
+  {
+    label: "모둠 활동",
+    keywords: ["모둠 수업", "팀 활동", "팀 대항"],
+    appIds: ["sweat-expedition", "escape-class", "bingo"]
+  },
+  {
+    label: "수업 자료 준비",
+    keywords: ["수업 준비", "교수 학습 자료", "자료 만들기"],
+    appIds: ["lesson-plan", "everything-class", "translation", "math-studio"]
+  }
+];
+
+const relatedTopicKeywords = {
+  체육: ["준비운동", "스트레칭"],
+  사회: ["역사", "유물", "문화재"],
+  "실과·안전": ["실과", "안전교육", "대피 훈련"],
+  "학급 운영": ["학급회의", "모둠 편성"]
 };

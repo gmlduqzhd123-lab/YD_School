@@ -2,6 +2,7 @@ const availableTopics = ["수학", "국어", "사회", "미술", "체육", "음�
 const topics = availableTopics.filter(topic => apps.some(app => app.topics.includes(topic)));
 const creators = ["엽쌤스쿨", "찰떡쌤"];
 const byId = new Map(apps.map(app => [app.id, app]));
+const clearFilters = { creator: "", topic: "", saved: "", student: "" };
 const favoriteKey = "yeoptteok-school-favorites";
 const hosted = location.protocol === "https:" || location.protocol === "http:";
 
@@ -18,6 +19,8 @@ const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
 const filterToggle = document.querySelector("#filter-toggle");
 const filterCount = document.querySelector("#filter-count");
+const studentFilter = document.querySelector("#student-filter");
+const situationSearch = document.querySelector("#situation-search");
 const favoriteFilter = document.querySelector("#favorite-filter");
 const favoriteStatus = document.querySelector("#favorite-status");
 const copyButton = document.querySelector("#copy-link");
@@ -63,11 +66,22 @@ function compact(text) {
   return normalizedWords(text).join("");
 }
 
-const appIndex = apps.map(app => ({
-  app,
-  title: compact(app.title),
-  fields: [app.title, app.creator, app.desc, app.access, ...app.topics, ...app.keys, ...(app.tags || [])].map(compact)
-}));
+const appIndex = apps.map(app => {
+  const situations = classroomSituations
+    .filter(situation => situation.appIds.includes(app.id))
+    .flatMap(situation => [situation.label, ...situation.keywords]);
+  const studentKeywords = studentURL(app)
+    ? ["학생용 링크", "학생 링크", "학생 공유", "학생에게 공유"]
+    : [];
+  return {
+    app,
+    title: compact(app.title),
+    fields: [
+      app.title, app.creator, app.desc, app.access, ...app.topics, ...app.keys, ...(app.tags || []),
+      ...accessLabels(app), ...situations, ...studentKeywords
+    ].map(compact)
+  };
+});
 
 function matchingPriority(entry, words, query) {
   if (!query) return 0;
@@ -199,6 +213,13 @@ function configureLink(link, app) {
   link.title = "외부 사이트에서 열립니다";
 }
 
+function accessLabels(app) {
+  const labels = app.access.split(" · ").filter(label => label !== "웹앱");
+  const studentCondition = studentShortcut(app)?.note;
+  if (studentCondition) labels.push(studentCondition);
+  return [...new Set(labels)];
+}
+
 function makeCard(app) {
   const card = template.content.firstElementChild.cloneNode(true);
   const preview = card.querySelector(".card-preview");
@@ -235,11 +256,19 @@ function makeCard(app) {
   const linkResult = app.linkAudit?.result;
   linkNotice.hidden = !["moved", "review"].includes(linkResult);
   linkNotice.textContent = linkResult === "moved" ? "주소 변경" : "접속 확인 중";
+  const studentLink = studentURL(app);
+  const requirements = accessLabels(app);
   const access = card.querySelector(".access");
-  const requirements = app.access.split(" · ").filter(part => part !== "웹앱");
+  const studentEntry = card.querySelector(".student-link");
+  card.querySelector(".card-access").hidden = !studentLink && requirements.length === 0;
   access.hidden = requirements.length === 0;
   access.textContent = requirements.join(" · ");
-  configureLink(card.querySelector("a"), app);
+  if (studentLink) {
+    studentEntry.hidden = false;
+    studentEntry.href = studentLink;
+    studentEntry.setAttribute("aria-label", app.title + " 학생용 링크, 새 탭");
+  }
+  configureLink(card.querySelector(".card-actions .primary"), app);
 
   const star = card.querySelector(".star");
   setStar(star, app);
@@ -312,9 +341,13 @@ document.querySelector("#detail-share").addEventListener("click", () => {
   if (detailApp) openShare(detailApp);
 });
 
+function studentShortcut(app) {
+  return app.shortcuts?.find(shortcut => shortcut.student);
+}
+
 function studentURL(app) {
   if (!app.studentNote) return null;
-  return app.shortcuts?.find(shortcut => shortcut.student)?.url || app.url;
+  return studentShortcut(app)?.url || app.url;
 }
 
 function openShare(app) {
@@ -432,35 +465,46 @@ function matchesFilters(entry, filters) {
   const app = entry.app;
   return (!filters.topic || app.topics.includes(filters.topic))
     && (!filters.creator || app.creator === filters.creator)
+    && (!filters.studentOnly || Boolean(studentURL(app)))
     && (!filters.savedOnly || favorites.has(app.id));
+}
+
+function relatedTopicSuggestions(query, filters) {
+  const text = compact(query);
+  if (!text) return [];
+  return topics.filter(topic => {
+    const keywords = [topic, ...(relatedTopicKeywords[topic] || [])];
+    return keywords.some(keyword => text.includes(compact(keyword)))
+      && appIndex.some(entry => matchesFilters(entry, { ...filters, topic }));
+  }).slice(0, 2).map(topic => ({ label: topic + " 앱 보기", changes: { q: "", topic } }));
 }
 
 function showSearchRecovery(queryMatches, filters, query) {
   const suggestions = [
-    { key: "creator", value: "", label: "모든 제작자에서 다시 검색" },
-    { key: "topic", value: "", label: "모든 주제에서 다시 검색" },
-    { key: "savedOnly", value: false, label: "즐겨찾기 밖에서도 검색" }
-  ].filter(({ key, value }) => filters[key]
-    && queryMatches.some(entry => matchesFilters(entry, { ...filters, [key]: value })));
+    { key: "creator", label: "모든 제작자에서 다시 검색", changes: { creator: "" } },
+    { key: "topic", label: "모든 주제에서 다시 검색", changes: { topic: "" } },
+    { key: "savedOnly", label: "즐겨찾기 밖에서도 검색", changes: { saved: "" } },
+    { key: "studentOnly", label: "학생 링크 조건을 풀고 검색", changes: { student: "" } }
+  ].filter(({ key }) => filters[key]
+    && queryMatches.some(entry => matchesFilters(entry, { ...filters, [key]: false })));
 
   if (!suggestions.length && queryMatches.length) {
-    suggestions.push({ key: "all", label: "필터를 풀고 다시 검색" });
+    suggestions.push({ label: "필터를 풀고 다시 검색", changes: clearFilters });
   }
-  if (!suggestions.length && query) {
-    suggestions.push({ key: "q", label: "검색어만 지우기" });
+  if (!queryMatches.length && query) {
+    suggestions.push(...relatedTopicSuggestions(query, filters));
   }
+  if (!suggestions.length && query) suggestions.push({ label: "검색어만 지우기", changes: { q: "" } });
 
-  emptyActions.replaceChildren(...suggestions.map(({ key, label }) => {
+  emptyActions.replaceChildren(...suggestions.map(({ label, changes }) => {
     const button = document.createElement("button");
     button.className = "secondary";
     button.type = "button";
     button.textContent = label;
     button.addEventListener("click", () => {
-      const changes = key === "all" ? { creator: "", topic: "", saved: "" }
-        : { [key === "savedOnly" ? "saved" : key]: "" };
       setParams(changes);
       update();
-      search.focus();
+      results.focus({ preventScroll: true });
     });
     return button;
   }));
@@ -472,12 +516,14 @@ function update() {
   const topic = topics.includes(params.get("topic")) ? params.get("topic") : "";
   const creator = creators.includes(params.get("creator")) ? params.get("creator") : "";
   const savedOnly = params.get("saved") === "1";
+  const studentOnly = params.get("student") === "1";
   const filterTotal = Number(Boolean(creator)) + Number(Boolean(topic));
   if (search.value !== q) search.value = q;
   clear.hidden = q.length === 0;
-  catalog.classList.toggle("is-filtering", Boolean(q.trim() || filterTotal));
+  catalog.classList.toggle("is-filtering", Boolean(q.trim() || filterTotal || studentOnly));
   filterCount.textContent = filterTotal ? " " + filterTotal : "";
   topicSelect.value = topic;
+  studentFilter.setAttribute("aria-pressed", String(studentOnly));
   favoriteFilter.setAttribute("aria-pressed", String(savedOnly));
   for (const button of creatorFilters.children) {
     button.setAttribute("aria-pressed", String(button.dataset.value === creator));
@@ -485,7 +531,10 @@ function update() {
 
   const words = normalizedWords(q);
   const query = words.join("");
-  const filters = { topic, creator, savedOnly };
+  for (const button of situationSearch.children) {
+    button.setAttribute("aria-pressed", String(button.dataset.query === query));
+  }
+  const filters = { topic, creator, savedOnly, studentOnly };
   const queryMatches = appIndex
     .map(entry => ({ app: entry.app, priority: matchingPriority(entry, words, query) }))
     .filter(entry => entry.priority >= 0);
@@ -493,8 +542,8 @@ function update() {
     .sort((a, b) => b.priority - a.priority);
   cards.replaceChildren(...shown.map(({ app }) => makeCard(app)));
 
-  results.textContent = [creator, topic, savedOnly ? "즐겨찾기" : "", "앱 " + shown.length + "개"].filter(Boolean).join(" · ");
-  reset.hidden = !q && !topic && !creator && !savedOnly;
+  results.textContent = [creator, topic, studentOnly ? "학생 링크" : "", savedOnly ? "즐겨찾기" : "", "앱 " + shown.length + "개"].filter(Boolean).join(" · ");
+  reset.hidden = !q && !topic && !creator && !savedOnly && !studentOnly;
   empty.hidden = shown.length > 0;
   if (shown.length === 0) {
     document.querySelector("#empty-message").textContent = savedOnly && favorites.size === 0
@@ -531,12 +580,31 @@ for (const creator of ["", ...creators]) {
 topicSelect.add(new Option("모든 주제", ""));
 for (const topic of topics) topicSelect.add(new Option(topic, topic));
 
+for (const { label } of classroomSituations.filter(situation => situation.quickSearch)) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "filter";
+  button.dataset.query = compact(label);
+  button.textContent = label;
+  button.addEventListener("click", () => {
+    const selected = button.getAttribute("aria-pressed") === "true";
+    setParams({ q: selected ? "" : label });
+    update();
+  });
+  situationSearch.append(button);
+}
+
 filterToggle.addEventListener("click", () => {
   const expanded = filterToggle.getAttribute("aria-expanded") === "true";
   filterToggle.setAttribute("aria-expanded", String(!expanded));
 });
 topicSelect.addEventListener("change", () => {
   setParams({ topic: topicSelect.value });
+  update();
+});
+studentFilter.addEventListener("click", () => {
+  const student = paramsNow().get("student") === "1" ? "" : "1";
+  setParams({ student });
   update();
 });
 favoriteFilter.addEventListener("click", () => {
@@ -564,12 +632,12 @@ clear.addEventListener("click", () => {
   search.focus();
 });
 reset.addEventListener("click", () => {
-  setParams({ q: "", topic: "", creator: "", saved: "" });
+  setParams({ q: "", ...clearFilters });
   update();
   search.focus();
 });
 document.querySelector("#back-to-catalog").addEventListener("click", () => {
-  setParams({ app: "", q: "", topic: "", creator: "", saved: "" }, "replaceState");
+  setParams({ app: "", q: "", ...clearFilters }, "replaceState");
   update();
   search.focus();
 });

@@ -19,7 +19,7 @@ const previewDialog = document.querySelector("#preview-dialog");
 const previewTitle = document.querySelector("#preview-title");
 const previewStage = document.querySelector("#preview-stage");
 const previewImage = document.querySelector("#preview-image");
-const previewError = document.querySelector("#preview-error");
+const previewStatus = document.querySelector("#preview-status");
 const previewZoom = document.querySelector("#preview-zoom");
 const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
@@ -60,6 +60,7 @@ let fallbackParams = null;
 let detailApp = null;
 let detailOpener = null;
 let previewOpener = null;
+let previewFallbackSource = null;
 let sharedApp = null;
 let shareRequest = 0;
 let favorites = readFavorites();
@@ -315,26 +316,40 @@ function setPreviewZoom(zoomed) {
 
 function showPreview(app, thumbnail, trigger) {
   previewOpener = trigger;
+  previewFallbackSource = thumbnail;
   previewTitle.textContent = app.title + " 미리보기";
   previewImage.alt = app.title + " 앱 화면";
-  previewError.hidden = true;
-  previewStage.hidden = false;
-  previewZoom.disabled = false;
+  previewStatus.textContent = "고해상도 미리보기를 불러오는 중…";
+  previewStatus.hidden = false;
+  previewStage.hidden = true;
+  previewZoom.disabled = true;
   setPreviewZoom(false);
-  previewImage.src = thumbnail;
   previewDialog.showModal();
+  previewImage.src = `./assets/previews-hd/${app.id}.webp`;
 }
 
 previewZoom.addEventListener("click", () => setPreviewZoom(!previewStage.classList.contains("is-zoomed")));
+previewImage.addEventListener("load", () => {
+  if (!previewDialog.open) return;
+  previewStage.hidden = false;
+  previewZoom.disabled = false;
+  previewStatus.hidden = Boolean(previewFallbackSource);
+});
 previewImage.addEventListener("error", () => {
   if (!previewDialog.open) return;
-  previewStage.hidden = true;
-  previewZoom.disabled = true;
-  previewError.hidden = false;
+  if (previewFallbackSource) {
+    previewStatus.textContent = "고해상도 이미지를 불러오지 못해 기본 미리보기를 표시합니다.";
+    previewImage.src = previewFallbackSource;
+    previewFallbackSource = null;
+    return;
+  }
+  previewStatus.textContent = "미리보기 이미지를 불러오지 못했습니다.";
 });
 document.querySelector("#preview-close").addEventListener("click", () => previewDialog.close());
 previewDialog.addEventListener("close", () => {
   if (previewDialog.open) return;
+  previewImage.removeAttribute("src");
+  previewFallbackSource = null;
   if (previewOpener?.isConnected) previewOpener.focus({ preventScroll: true });
   previewOpener = null;
 });

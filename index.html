@@ -8,7 +8,7 @@
 <meta name="description" content="엽쌤스쿨과 찰떡쌤이 만든 수업, 학급 운영, 교사 업무용 바이브코딩 앱 모음">
 <link rel="stylesheet" href="./assets/styles.css?v=5">
 <script defer src="./assets/catalog-data.js?v=4"></script>
-<script defer src="./assets/catalog.js?v=5"></script>
+<script defer src="./assets/catalog.js?v=6"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -171,12 +171,12 @@
     <button type="button" class="close" id="preview-close" aria-label="미리보기 닫기" autofocus>×</button>
   </div>
   <div class="dialog-body preview-body">
-    <div id="preview-stage" class="preview-stage" role="region" aria-label="앱 미리보기 이미지" tabindex="-1">
+    <div id="preview-stage" class="preview-stage" role="region" aria-label="앱 미리보기 이미지" tabindex="-1" hidden>
       <img id="preview-image" alt="">
     </div>
-    <p id="preview-error" class="empty" role="status" hidden>미리보기 이미지를 불러오지 못했습니다.</p>
+    <p id="preview-status" class="empty" role="status" hidden></p>
     <div class="preview-tools">
-      <button type="button" class="secondary" id="preview-zoom" aria-controls="preview-stage">2배 확대</button>
+      <button type="button" class="secondary" id="preview-zoom" aria-controls="preview-stage" disabled>2배 확대</button>
     </div>
   </div>
 </dialog>

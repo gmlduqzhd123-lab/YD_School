@@ -15,6 +15,12 @@ const empty = document.querySelector("#empty");
 const reset = document.querySelector("#reset");
 const template = document.querySelector("#card-template");
 const detail = document.querySelector("#detail");
+const previewDialog = document.querySelector("#preview-dialog");
+const previewTitle = document.querySelector("#preview-title");
+const previewStage = document.querySelector("#preview-stage");
+const previewImage = document.querySelector("#preview-image");
+const previewError = document.querySelector("#preview-error");
+const previewZoom = document.querySelector("#preview-zoom");
 const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
 const filterToggle = document.querySelector("#filter-toggle");
@@ -53,6 +59,7 @@ const copyValue = document.querySelector("#copy-value");
 let fallbackParams = null;
 let detailApp = null;
 let detailOpener = null;
+let previewOpener = null;
 let sharedApp = null;
 let shareRequest = 0;
 let favorites = readFavorites();
@@ -228,6 +235,12 @@ function makeCard(app) {
   preview.textContent = app.icon;
   const thumbnail = thumbnails[app.id];
   if (thumbnail) {
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "preview-trigger";
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.setAttribute("aria-label", app.title + " 미리보기 크게 보기");
+    trigger.addEventListener("click", () => showPreview(app, thumbnail, trigger));
     const img = new Image();
     img.alt = "";
     img.width = 84;
@@ -237,9 +250,12 @@ function makeCard(app) {
     img.addEventListener("error", () => {
       preview.classList.remove("has-photo");
       preview.textContent = app.icon;
+      trigger.replaceWith(preview);
     }, { once: true });
     preview.classList.add("has-photo");
     preview.replaceChildren(img);
+    preview.replaceWith(trigger);
+    trigger.append(preview);
     img.src = thumbnail;
   }
   card.querySelector(".topic").textContent = app.topics[0];
@@ -289,6 +305,39 @@ function makeCard(app) {
   share.addEventListener("click", () => openShare(app));
   return card;
 }
+
+function setPreviewZoom(zoomed) {
+  previewStage.classList.toggle("is-zoomed", zoomed);
+  previewStage.tabIndex = zoomed ? 0 : -1;
+  previewZoom.textContent = zoomed ? "화면에 맞추기" : "2배 확대";
+  previewStage.scrollTo({ left: zoomed ? (previewStage.scrollWidth - previewStage.clientWidth) / 2 : 0, top: 0 });
+}
+
+function showPreview(app, thumbnail, trigger) {
+  previewOpener = trigger;
+  previewTitle.textContent = app.title + " 미리보기";
+  previewImage.alt = app.title + " 앱 화면";
+  previewError.hidden = true;
+  previewStage.hidden = false;
+  previewZoom.disabled = false;
+  setPreviewZoom(false);
+  previewImage.src = thumbnail;
+  previewDialog.showModal();
+}
+
+previewZoom.addEventListener("click", () => setPreviewZoom(!previewStage.classList.contains("is-zoomed")));
+previewImage.addEventListener("error", () => {
+  if (!previewDialog.open) return;
+  previewStage.hidden = true;
+  previewZoom.disabled = true;
+  previewError.hidden = false;
+});
+document.querySelector("#preview-close").addEventListener("click", () => previewDialog.close());
+previewDialog.addEventListener("close", () => {
+  if (previewDialog.open) return;
+  if (previewOpener?.isConnected) previewOpener.focus({ preventScroll: true });
+  previewOpener = null;
+});
 
 function displayDetail(app) {
   if (detailApp === app && detail.open) return;
@@ -660,12 +709,18 @@ detail.addEventListener("close", () => {
   if (detailOpener?.isConnected) detailOpener.focus();
   detailOpener = null;
 });
-detail.addEventListener("click", event => {
-  if (event.target !== detail) return;
-  const box = detail.getBoundingClientRect();
-  if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeAppDetail();
-});
+function closeOnBackdrop(dialog, close) {
+  dialog.addEventListener("click", event => {
+    if (event.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
+  });
+}
+
+closeOnBackdrop(detail, closeAppDetail);
+closeOnBackdrop(previewDialog, () => previewDialog.close());
 window.addEventListener("popstate", () => {
+  if (previewDialog.open) previewDialog.close();
   if (shareDialog.open) shareDialog.close();
   update();
 });

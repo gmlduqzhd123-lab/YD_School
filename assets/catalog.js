@@ -223,20 +223,24 @@ function accessLabels(app) {
 function makeCard(app) {
   const card = template.content.firstElementChild.cloneNode(true);
   const preview = card.querySelector(".card-preview");
-  if (thumbnails[app.id]) {
+  preview.style.setProperty("--art-bg", app.palette[0]);
+  preview.style.setProperty("--art-ink", app.palette[1]);
+  preview.textContent = app.icon;
+  const thumbnail = thumbnails[app.id];
+  if (thumbnail) {
     const img = new Image();
-    img.src = thumbnails[app.id];
     img.alt = "";
     img.width = 84;
     img.height = 50;
     img.loading = "lazy";
     img.decoding = "async";
+    img.addEventListener("error", () => {
+      preview.classList.remove("has-photo");
+      preview.textContent = app.icon;
+    }, { once: true });
     preview.classList.add("has-photo");
-    preview.append(img);
-  } else {
-    preview.style.setProperty("--art-bg", app.palette[0]);
-    preview.style.setProperty("--art-ink", app.palette[1]);
-    preview.textContent = app.icon;
+    preview.replaceChildren(img);
+    img.src = thumbnail;
   }
   card.querySelector(".topic").textContent = app.topics[0];
   card.querySelector(".creator").textContent = app.creator;

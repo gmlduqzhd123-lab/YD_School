@@ -18,7 +18,11 @@ const detail = document.querySelector("#detail");
 const previewDialog = document.querySelector("#preview-dialog");
 const previewTitle = document.querySelector("#preview-title");
 const previewStage = document.querySelector("#preview-stage");
-const previewImage = document.querySelector("#preview-image");
+const previewCanvas = document.querySelector("#preview-canvas");
+const previewNavigation = document.querySelector("#preview-navigation");
+const previewPrevious = document.querySelector("#preview-previous");
+const previewNext = document.querySelector("#preview-next");
+const previewPosition = document.querySelector("#preview-position");
 const previewStatus = document.querySelector("#preview-status");
 const previewZoom = document.querySelector("#preview-zoom");
 const previewLink = document.querySelector("#preview-link");
@@ -63,10 +67,14 @@ const copyValue = document.querySelector("#copy-value");
 let fallbackParams = null;
 let detailApp = null;
 let detailOpener = null;
+let catalogResults = [];
+let previewResults = [];
+let previewIndex = -1;
+let previewImage = previewCanvas.firstElementChild;
 let previewOpener = null;
-let previewFallbackSource = null;
 let previewScale = 1;
 let previewPinch = null;
+let previewSwipe = null;
 let sharedApp = null;
 let shareRequest = 0;
 let favorites = readFavorites();
@@ -247,7 +255,7 @@ function makeCard(app) {
     trigger.className = "preview-trigger";
     trigger.setAttribute("aria-haspopup", "dialog");
     trigger.setAttribute("aria-label", app.title + " 미리보기 크게 보기");
-    trigger.addEventListener("click", () => showPreview(app, thumbnail, trigger));
+    trigger.addEventListener("click", () => showPreview(app, trigger));
     const img = new Image();
     img.alt = "";
     img.width = 84;
@@ -326,6 +334,17 @@ function previewImagePoint(point) {
   };
 }
 
+function updatePreviewZoomControls() {
+  const zoomed = previewScale > 1;
+  previewStage.tabIndex = zoomed ? 0 : -1;
+  const label = previewScale >= 2 ? "화면에 맞추기" : "2배 확대";
+  if (previewZoom.textContent !== label) previewZoom.textContent = label;
+  const hint = zoomed ? "한 손가락으로 이미지 이동" : previewResults.length > 1
+    ? "좌우로 밀어 앱 이동 · 두 손가락 확대"
+    : "두 손가락으로 확대·축소";
+  if (previewHelp.textContent !== hint) previewHelp.textContent = hint;
+}
+
 function setPreviewScale(value, point, imagePoint) {
   previewScale = Math.max(1, Math.min(3, value));
   const zoomed = previewScale > 1;
@@ -339,9 +358,7 @@ function setPreviewScale(value, point, imagePoint) {
   const height = box.height - 2 * previewStage.clientTop;
   const fitWidth = Math.min(width, height * previewImage.naturalWidth / previewImage.naturalHeight);
   previewImage.style.width = `${Math.floor(fitWidth * previewScale)}px`;
-  previewStage.tabIndex = zoomed ? 0 : -1;
-  const zoomLabel = previewScale >= 2 ? "화면에 맞추기" : "2배 확대";
-  if (previewZoom.textContent !== zoomLabel) previewZoom.textContent = zoomLabel;
+  updatePreviewZoomControls();
 
   if (!zoomed) {
     previewStage.scrollTo(0, 0);
@@ -363,9 +380,11 @@ function previewTouchPair() {
 }
 
 previewStage.addEventListener("pointerdown", event => {
-  if (event.pointerType !== "touch" || previewPointers.size >= 2) return;
+  if (event.pointerType !== "touch" || previewZoom.disabled || previewPointers.size >= 2) return;
   previewStage.setPointerCapture(event.pointerId);
-  previewPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  const point = { x: event.clientX, y: event.clientY };
+  previewPointers.set(event.pointerId, point);
+  previewSwipe = previewPointers.size === 1 && previewScale === 1 ? point : null;
   if (previewPointers.size === 2) {
     const pair = previewTouchPair();
     previewPinch = { scale: previewScale, distance: Math.max(1, pair.distance), imagePoint: previewImagePoint(pair) };
@@ -387,61 +406,111 @@ previewStage.addEventListener("pointermove", event => {
 
 for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
   previewStage.addEventListener(type, event => {
-    if (previewPointers.delete(event.pointerId)) previewPinch = null;
+    if (!previewPointers.delete(event.pointerId)) return;
+    const start = previewSwipe;
+    previewPinch = null;
+    previewSwipe = null;
+    if (type !== "pointerup" || !start || previewScale !== 1) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    const threshold = Math.max(48, Math.min(80, previewStage.clientWidth * .16));
+    if (Math.abs(dx) >= threshold && Math.abs(dx) > Math.abs(dy) * 1.35) movePreview(dx < 0 ? 1 : -1);
   });
 }
 
 new ResizeObserver(() => {
-  if (previewDialog.open && !previewStage.hidden) setPreviewScale(previewScale);
+  if (previewDialog.open && !previewCanvas.hidden) setPreviewScale(previewScale);
 }).observe(previewStage, { box: "border-box" });
 
-function showPreview(app, thumbnail, trigger) {
+function showPreview(app, trigger) {
   previewOpener = trigger;
-  previewFallbackSource = thumbnail;
+  previewResults = catalogResults;
+  previewIndex = previewResults.indexOf(app);
+  displayPreview();
+  previewDialog.showModal();
+}
+
+function movePreview(offset) {
+  const nextIndex = previewIndex + offset;
+  if (nextIndex < 0 || nextIndex >= previewResults.length) return;
+  previewIndex = nextIndex;
+  displayPreview();
+}
+
+function displayPreview() {
+  const app = previewResults[previewIndex];
+  const active = document.activeElement;
+  previewNavigation.hidden = previewResults.length < 2;
+  previewPosition.textContent = `${previewIndex + 1} / ${previewResults.length}`;
+  previewPrevious.disabled = previewIndex === 0;
+  previewNext.disabled = previewIndex === previewResults.length - 1;
+  if (active === previewPrevious && previewPrevious.disabled) previewNext.focus({ preventScroll: true });
+  if (active === previewNext && previewNext.disabled) previewPrevious.focus({ preventScroll: true });
+
   previewTitle.textContent = app.title + " 미리보기";
   configureLink(previewLink, app);
   previewShare.onclick = () => {
     previewShare.focus({ preventScroll: true });
     openShare(app);
   };
-  previewImage.alt = app.title + " 앱 화면";
   previewStatus.textContent = "고해상도 미리보기를 불러오는 중…";
   previewStatus.hidden = false;
-  previewStage.hidden = true;
-  previewHelp.hidden = true;
-  previewZoom.textContent = "2배 확대";
+  previewCanvas.hidden = true;
+  previewStage.scrollTo(0, 0);
+  previewPointers.clear();
+  previewPinch = null;
+  previewSwipe = null;
+  previewScale = 1;
+  updatePreviewZoomControls();
   previewZoom.disabled = true;
-  previewDialog.showModal();
-  previewImage.src = `./assets/previews-hd/${app.id}.webp`;
+
+  const image = new Image();
+  image.id = "preview-image";
+  image.alt = app.title + " 앱 화면";
+  image.draggable = false;
+  let fallback = thumbnails[app.id];
+  image.addEventListener("load", () => {
+    if (!previewDialog.open || previewImage !== image) return;
+    previewCanvas.hidden = false;
+    setPreviewScale(1);
+    previewZoom.disabled = false;
+    previewStatus.hidden = Boolean(fallback);
+  });
+  image.addEventListener("error", () => {
+    if (!previewDialog.open || previewImage !== image) return;
+    if (fallback) {
+      previewStatus.textContent = "고해상도 이미지를 불러오지 못해 기본 미리보기를 표시합니다.";
+      image.src = fallback;
+      fallback = null;
+      return;
+    }
+    previewStatus.textContent = "미리보기 이미지를 불러오지 못했습니다.";
+  });
+  previewImage.removeAttribute("src");
+  previewCanvas.replaceChildren(image);
+  previewImage = image;
+  image.src = `./assets/previews-hd/${app.id}.webp`;
 }
 
+previewPrevious.addEventListener("click", () => movePreview(-1));
+previewNext.addEventListener("click", () => movePreview(1));
+previewDialog.addEventListener("keydown", event => {
+  if (previewScale > 1 || previewResults.length < 2 || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  event.preventDefault();
+  movePreview(event.key === "ArrowLeft" ? -1 : 1);
+});
 previewZoom.addEventListener("click", () => setPreviewScale(previewScale >= 2 ? 1 : 2));
-previewImage.addEventListener("load", () => {
-  if (!previewDialog.open) return;
-  previewStage.hidden = false;
-  previewHelp.hidden = false;
-  setPreviewScale(1);
-  previewZoom.disabled = false;
-  previewStatus.hidden = Boolean(previewFallbackSource);
-});
-previewImage.addEventListener("error", () => {
-  if (!previewDialog.open) return;
-  if (previewFallbackSource) {
-    previewStatus.textContent = "고해상도 이미지를 불러오지 못해 기본 미리보기를 표시합니다.";
-    previewImage.src = previewFallbackSource;
-    previewFallbackSource = null;
-    return;
-  }
-  previewStatus.textContent = "미리보기 이미지를 불러오지 못했습니다.";
-});
 document.querySelector("#preview-close").addEventListener("click", () => previewDialog.close());
 previewDialog.addEventListener("close", () => {
   if (previewDialog.open) return;
   previewShare.onclick = null;
   previewImage.removeAttribute("src");
-  previewFallbackSource = null;
+  previewResults = [];
+  previewIndex = -1;
   previewPointers.clear();
   previewPinch = null;
+  previewSwipe = null;
   if (previewOpener?.isConnected) previewOpener.focus({ preventScroll: true });
   previewOpener = null;
 });
@@ -700,7 +769,8 @@ function update() {
     .filter(entry => entry.priority >= 0);
   const shown = queryMatches.filter(entry => matchesFilters(entry, filters))
     .sort((a, b) => b.priority - a.priority);
-  cards.replaceChildren(...shown.map(({ app }) => makeCard(app)));
+  catalogResults = shown.map(({ app }) => app);
+  cards.replaceChildren(...catalogResults.map(makeCard));
 
   results.textContent = [creator, topic, studentOnly ? "학생 링크" : "", savedOnly ? "즐겨찾기" : "", "앱 " + shown.length + "개"].filter(Boolean).join(" · ");
   reset.hidden = !q && !topic && !creator && !savedOnly && !studentOnly;

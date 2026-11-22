@@ -119,7 +119,7 @@ body:has(dialog[open]) { overflow: hidden; }
 .preview-canvas { display: grid; place-items: center; width: max-content; height: max-content; min-width: 100%; min-height: 100%; }
 .preview-stage img { display: block; height: auto; user-select: none; -webkit-user-select: none; }
 .preview-stage:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.preview-tools { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin-top: .55rem; }
+.preview-tools { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; margin-top: .55rem; }
 .preview-help { display: none; margin: 0 auto 0 0; color: var(--muted); font-size: .85rem; }
 @media (any-pointer: coarse) { .preview-help { display: block; } }
 #preview-zoom { -webkit-tap-highlight-color: transparent; }

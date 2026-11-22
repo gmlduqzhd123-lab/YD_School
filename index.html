@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#fbf7ef">
 <title>엽떡스쿨 — 수업에 바로 쓰는 바이브코딩 앱</title>
 <meta name="description" content="엽쌤스쿨과 찰떡쌤이 만든 수업, 학급 운영, 교사 업무용 바이브코딩 앱 모음">
-<link rel="stylesheet" href="./assets/styles.css?v=7">
+<link rel="stylesheet" href="./assets/styles.css?v=8">
 <script defer src="./assets/catalog-data.js?v=4"></script>
-<script defer src="./assets/catalog.js?v=7"></script>
+<script defer src="./assets/catalog.js?v=8"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -177,7 +177,10 @@
     <p id="preview-status" class="empty" role="status" hidden></p>
     <div class="preview-tools">
       <p class="preview-help" id="preview-help" hidden>두 손가락으로 확대·축소</p>
-      <button type="button" class="secondary" id="preview-zoom" aria-controls="preview-stage" disabled>2배 확대</button>
+      <div class="detail-actions">
+        <button type="button" class="secondary" id="preview-zoom" aria-controls="preview-stage" disabled>2배 확대</button>
+        <a class="primary" id="preview-link" target="_blank" rel="noopener noreferrer"></a>
+      </div>
     </div>
   </div>
 </dialog>

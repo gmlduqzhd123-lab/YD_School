@@ -21,6 +21,7 @@ const previewStage = document.querySelector("#preview-stage");
 const previewImage = document.querySelector("#preview-image");
 const previewStatus = document.querySelector("#preview-status");
 const previewZoom = document.querySelector("#preview-zoom");
+const previewLink = document.querySelector("#preview-link");
 const previewHelp = document.querySelector("#preview-help");
 const previewPointers = new Map();
 const topicSelect = document.querySelector("#topics");
@@ -397,6 +398,7 @@ function showPreview(app, thumbnail, trigger) {
   previewOpener = trigger;
   previewFallbackSource = thumbnail;
   previewTitle.textContent = app.title + " 미리보기";
+  configureLink(previewLink, app);
   previewImage.alt = app.title + " 앱 화면";
   previewStatus.textContent = "고해상도 미리보기를 불러오는 중…";
   previewStatus.hidden = false;

@@ -29,6 +29,7 @@ const previewLink = document.querySelector("#preview-link");
 const previewShare = document.querySelector("#preview-share");
 const previewHelp = document.querySelector("#preview-help");
 const previewPointers = new Map();
+const previewPreloads = new Map();
 const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
 const filterToggle = document.querySelector("#filter-toggle");
@@ -426,8 +427,8 @@ function showPreview(app, trigger) {
   previewOpener = trigger;
   previewResults = catalogResults;
   previewIndex = previewResults.indexOf(app);
-  displayPreview();
   previewDialog.showModal();
+  displayPreview();
 }
 
 function movePreview(offset) {
@@ -435,6 +436,26 @@ function movePreview(offset) {
   if (nextIndex < 0 || nextIndex >= previewResults.length) return;
   previewIndex = nextIndex;
   displayPreview();
+}
+
+function previewSource(app) {
+  return `./assets/previews-hd/${app.id}.webp`;
+}
+
+function preloadPreviewNeighbors(sources) {
+  for (const [source, image] of previewPreloads) {
+    if (sources.includes(source)) continue;
+    image.removeAttribute("src");
+    previewPreloads.delete(source);
+  }
+  for (const source of sources) {
+    if (previewPreloads.has(source)) continue;
+    const image = new Image();
+    image.fetchPriority = "low";
+    image.src = source;
+    previewPreloads.set(source, image);
+    image.decode().catch(() => {});
+  }
 }
 
 function displayPreview() {
@@ -464,19 +485,26 @@ function displayPreview() {
   updatePreviewZoomControls();
   previewZoom.disabled = true;
 
-  const image = new Image();
+  const source = previewSource(app);
+  const neighbors = [previewResults[previewIndex - 1], previewResults[previewIndex + 1]]
+    .filter(Boolean).map(previewSource);
+  const image = previewPreloads.get(source) ?? new Image();
+  previewPreloads.delete(source);
   image.id = "preview-image";
   image.alt = app.title + " 앱 화면";
   image.draggable = false;
+  image.fetchPriority = "high";
   let fallback = thumbnails[app.id];
-  image.addEventListener("load", () => {
+  image.onload = () => {
     if (!previewDialog.open || previewImage !== image) return;
+    image.onload = null;
+    image.onerror = null;
     previewCanvas.hidden = false;
     setPreviewScale(1);
     previewZoom.disabled = false;
     previewStatus.hidden = Boolean(fallback);
-  });
-  image.addEventListener("error", () => {
+  };
+  image.onerror = () => {
     if (!previewDialog.open || previewImage !== image) return;
     if (fallback) {
       previewStatus.textContent = "고해상도 이미지를 불러오지 못해 기본 미리보기를 표시합니다.";
@@ -485,11 +513,25 @@ function displayPreview() {
       return;
     }
     previewStatus.textContent = "미리보기 이미지를 불러오지 못했습니다.";
-  });
-  previewImage.removeAttribute("src");
+  };
+
+  const previousSource = previewImage.getAttribute("src");
+  previewImage.onload = null;
+  previewImage.onerror = null;
+  if (neighbors.includes(previousSource)) {
+    previewImage.fetchPriority = "low";
+    previewPreloads.set(previousSource, previewImage);
+  } else {
+    previewImage.removeAttribute("src");
+  }
   previewCanvas.replaceChildren(image);
   previewImage = image;
-  image.src = `./assets/previews-hd/${app.id}.webp`;
+  if (!image.hasAttribute("src")) image.src = source;
+  else if (image.complete) {
+    if (image.naturalWidth) image.onload();
+    else image.onerror();
+  }
+  preloadPreviewNeighbors(neighbors);
 }
 
 previewPrevious.addEventListener("click", () => movePreview(-1));
@@ -505,7 +547,10 @@ document.querySelector("#preview-close").addEventListener("click", () => preview
 previewDialog.addEventListener("close", () => {
   if (previewDialog.open) return;
   previewShare.onclick = null;
+  previewImage.onload = null;
+  previewImage.onerror = null;
   previewImage.removeAttribute("src");
+  preloadPreviewNeighbors([]);
   previewResults = [];
   previewIndex = -1;
   previewPointers.clear();

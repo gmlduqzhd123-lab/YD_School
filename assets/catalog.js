@@ -22,6 +22,7 @@ const previewImage = document.querySelector("#preview-image");
 const previewStatus = document.querySelector("#preview-status");
 const previewZoom = document.querySelector("#preview-zoom");
 const previewLink = document.querySelector("#preview-link");
+const previewShare = document.querySelector("#preview-share");
 const previewHelp = document.querySelector("#preview-help");
 const previewPointers = new Map();
 const topicSelect = document.querySelector("#topics");
@@ -399,6 +400,10 @@ function showPreview(app, thumbnail, trigger) {
   previewFallbackSource = thumbnail;
   previewTitle.textContent = app.title + " 미리보기";
   configureLink(previewLink, app);
+  previewShare.onclick = () => {
+    previewShare.focus({ preventScroll: true });
+    openShare(app);
+  };
   previewImage.alt = app.title + " 앱 화면";
   previewStatus.textContent = "고해상도 미리보기를 불러오는 중…";
   previewStatus.hidden = false;
@@ -432,6 +437,7 @@ previewImage.addEventListener("error", () => {
 document.querySelector("#preview-close").addEventListener("click", () => previewDialog.close());
 previewDialog.addEventListener("close", () => {
   if (previewDialog.open) return;
+  previewShare.onclick = null;
   previewImage.removeAttribute("src");
   previewFallbackSource = null;
   previewPointers.clear();
@@ -821,8 +827,8 @@ function closeOnBackdrop(dialog, close) {
 closeOnBackdrop(detail, closeAppDetail);
 closeOnBackdrop(previewDialog, () => previewDialog.close());
 window.addEventListener("popstate", () => {
-  if (previewDialog.open) previewDialog.close();
   if (shareDialog.open) shareDialog.close();
+  if (previewDialog.open) previewDialog.close();
   update();
 });
 window.addEventListener("storage", event => {

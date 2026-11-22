@@ -21,6 +21,8 @@ const previewStage = document.querySelector("#preview-stage");
 const previewImage = document.querySelector("#preview-image");
 const previewStatus = document.querySelector("#preview-status");
 const previewZoom = document.querySelector("#preview-zoom");
+const previewHelp = document.querySelector("#preview-help");
+const previewPointers = new Map();
 const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
 const filterToggle = document.querySelector("#filter-toggle");
@@ -61,6 +63,8 @@ let detailApp = null;
 let detailOpener = null;
 let previewOpener = null;
 let previewFallbackSource = null;
+let previewScale = 1;
+let previewPinch = null;
 let sharedApp = null;
 let shareRequest = 0;
 let favorites = readFavorites();
@@ -307,12 +311,87 @@ function makeCard(app) {
   return card;
 }
 
-function setPreviewZoom(zoomed) {
-  previewStage.classList.toggle("is-zoomed", zoomed);
-  previewStage.tabIndex = zoomed ? 0 : -1;
-  previewZoom.textContent = zoomed ? "화면에 맞추기" : "2배 확대";
-  previewStage.scrollTo({ left: zoomed ? (previewStage.scrollWidth - previewStage.clientWidth) / 2 : 0, top: 0 });
+function previewCenter() {
+  const box = previewStage.getBoundingClientRect();
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
 }
+
+function previewImagePoint(point) {
+  const box = previewImage.getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(1, (point.x - box.left) / box.width)),
+    y: Math.max(0, Math.min(1, (point.y - box.top) / box.height))
+  };
+}
+
+function setPreviewScale(value, point, imagePoint) {
+  previewScale = Math.max(1, Math.min(3, value));
+  const zoomed = previewScale > 1;
+  if (zoomed && !point) {
+    point = previewCenter();
+    imagePoint = previewImagePoint(point);
+  }
+
+  const box = previewStage.getBoundingClientRect();
+  const width = box.width - 2 * previewStage.clientLeft;
+  const height = box.height - 2 * previewStage.clientTop;
+  const fitWidth = Math.min(width, height * previewImage.naturalWidth / previewImage.naturalHeight);
+  previewImage.style.width = `${Math.floor(fitWidth * previewScale)}px`;
+  previewStage.tabIndex = zoomed ? 0 : -1;
+  const zoomLabel = previewScale >= 2 ? "화면에 맞추기" : "2배 확대";
+  if (previewZoom.textContent !== zoomLabel) previewZoom.textContent = zoomLabel;
+
+  if (!zoomed) {
+    previewStage.scrollTo(0, 0);
+    return;
+  }
+  // Keep the same image point under the fingers as the image changes size.
+  const scaled = previewImage.getBoundingClientRect();
+  previewStage.scrollBy(scaled.left + imagePoint.x * scaled.width - point.x,
+    scaled.top + imagePoint.y * scaled.height - point.y);
+}
+
+function previewTouchPair() {
+  const [first, second] = previewPointers.values();
+  return {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+    distance: Math.hypot(first.x - second.x, first.y - second.y)
+  };
+}
+
+previewStage.addEventListener("pointerdown", event => {
+  if (event.pointerType !== "touch" || previewPointers.size >= 2) return;
+  previewStage.setPointerCapture(event.pointerId);
+  previewPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (previewPointers.size === 2) {
+    const pair = previewTouchPair();
+    previewPinch = { scale: previewScale, distance: Math.max(1, pair.distance), imagePoint: previewImagePoint(pair) };
+  }
+});
+
+previewStage.addEventListener("pointermove", event => {
+  const previous = previewPointers.get(event.pointerId);
+  if (!previous) return;
+  const position = { x: event.clientX, y: event.clientY };
+  previewPointers.set(event.pointerId, position);
+  if (previewPinch) {
+    const pair = previewTouchPair();
+    setPreviewScale(previewPinch.scale * pair.distance / previewPinch.distance, pair, previewPinch.imagePoint);
+  } else if (previewScale > 1) {
+    previewStage.scrollBy(previous.x - position.x, previous.y - position.y);
+  }
+});
+
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  previewStage.addEventListener(type, event => {
+    if (previewPointers.delete(event.pointerId)) previewPinch = null;
+  });
+}
+
+new ResizeObserver(() => {
+  if (previewDialog.open && !previewStage.hidden) setPreviewScale(previewScale);
+}).observe(previewStage, { box: "border-box" });
 
 function showPreview(app, thumbnail, trigger) {
   previewOpener = trigger;
@@ -322,16 +401,19 @@ function showPreview(app, thumbnail, trigger) {
   previewStatus.textContent = "고해상도 미리보기를 불러오는 중…";
   previewStatus.hidden = false;
   previewStage.hidden = true;
+  previewHelp.hidden = true;
+  previewZoom.textContent = "2배 확대";
   previewZoom.disabled = true;
-  setPreviewZoom(false);
   previewDialog.showModal();
   previewImage.src = `./assets/previews-hd/${app.id}.webp`;
 }
 
-previewZoom.addEventListener("click", () => setPreviewZoom(!previewStage.classList.contains("is-zoomed")));
+previewZoom.addEventListener("click", () => setPreviewScale(previewScale >= 2 ? 1 : 2));
 previewImage.addEventListener("load", () => {
   if (!previewDialog.open) return;
   previewStage.hidden = false;
+  previewHelp.hidden = false;
+  setPreviewScale(1);
   previewZoom.disabled = false;
   previewStatus.hidden = Boolean(previewFallbackSource);
 });
@@ -350,6 +432,8 @@ previewDialog.addEventListener("close", () => {
   if (previewDialog.open) return;
   previewImage.removeAttribute("src");
   previewFallbackSource = null;
+  previewPointers.clear();
+  previewPinch = null;
   if (previewOpener?.isConnected) previewOpener.focus({ preventScroll: true });
   previewOpener = null;
 });

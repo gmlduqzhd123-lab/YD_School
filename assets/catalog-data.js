@@ -31,6 +31,7 @@ const apps = [
       "‘오늘 수업 시작’에서 활동을 고르세요.",
       "교실 TV나 공용 기기에 활동 안내를 띄우세요."
     ],
+    "studentNote": "참여 화면에서 선생님이 안내한 모둠 비밀번호를 입력하세요.",
     "linkAudit": {
       "result": "checked",
       "checkedAt": "2026-11-22",
@@ -44,7 +45,8 @@ const apps = [
       {
         "label": "학생 수업 참여",
         "url": "https://physical-pi.vercel.app/lobby",
-        "note": "모둠 비밀번호 필요"
+        "note": "모둠 비밀번호 필요",
+        "student": true
       }
     ]
   },

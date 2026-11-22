@@ -6,6 +6,7 @@ const favoriteKey = "yeoptteok-school-favorites";
 const hosted = location.protocol === "https:" || location.protocol === "http:";
 
 const search = document.querySelector("#search");
+const catalog = document.querySelector("#catalog");
 const clear = document.querySelector("#clear");
 const cards = document.querySelector("#cards");
 const results = document.querySelector("#results");
@@ -15,11 +16,18 @@ const template = document.querySelector("#card-template");
 const detail = document.querySelector("#detail");
 const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
+const filterToggle = document.querySelector("#filter-toggle");
+const filterCount = document.querySelector("#filter-count");
 const favoriteFilter = document.querySelector("#favorite-filter");
 const favoriteStatus = document.querySelector("#favorite-status");
 const copyButton = document.querySelector("#copy-link");
 const copyTeacher = document.querySelector("#copy-teacher");
 const copyStudent = document.querySelector("#copy-student");
+const copyOriginal = document.querySelector("#copy-original");
+const sendTeacher = document.querySelector("#send-teacher");
+const sendStudent = document.querySelector("#send-student");
+const shareDialog = document.querySelector("#share-dialog");
+const shareStatuses = shareDialog.querySelectorAll(".copy-state");
 const studentShare = document.querySelector("#student-share");
 const studentQR = document.querySelector("#student-qr");
 const qrPanel = document.querySelector("#student-qr-panel");
@@ -37,12 +45,13 @@ const quickForm = document.querySelector("#quick-form");
 const quickSlots = [...quickForm.querySelectorAll("select")];
 const quickStatus = document.querySelector("#quick-status");
 const missingApp = document.querySelector("#missing-app");
-const copyStatus = document.querySelector("#copy-status");
 const copyValue = document.querySelector("#copy-value");
 
 let fallbackParams = null;
 let detailApp = null;
 let detailOpener = null;
+let sharedApp = null;
+let shareRequest = 0;
 let favorites = readFavorites();
 let pinnedApps = readPins();
 
@@ -235,13 +244,16 @@ function makeCard(app) {
   const star = card.querySelector(".star");
   setStar(star, app);
   star.addEventListener("click", () => updateFavorite(star, app));
-  const opener = card.querySelector(".card-actions button");
+  const opener = card.querySelector(".card-detail");
   opener.setAttribute("aria-label", app.title + " 활용 보기");
   opener.addEventListener("click", () => {
     detailOpener = opener;
     setParams({ app: app.id });
     displayDetail(app);
   });
+  const share = card.querySelector(".card-share");
+  share.setAttribute("aria-label", app.title + " 공유");
+  share.addEventListener("click", () => openShare(app));
   return card;
 }
 
@@ -292,21 +304,47 @@ function displayDetail(app) {
     }
     return link;
   }));
+  detail.scrollTop = 0;
+  if (!detail.open) detail.showModal();
+}
+
+document.querySelector("#detail-share").addEventListener("click", () => {
+  if (detailApp) openShare(detailApp);
+});
+
+function studentURL(app) {
+  if (!app.studentNote) return null;
+  return app.shortcuts?.find(shortcut => shortcut.student)?.url || app.url;
+}
+
+function openShare(app) {
+  const studentLink = studentURL(app);
+  sharedApp = app;
+  shareRequest++;
+  document.querySelector("#share-app-name").textContent = app.title;
+  document.querySelector("#student-note").textContent = app.studentNote || "";
+  studentShare.hidden = !studentLink;
+  document.querySelector("#original-share").hidden = app.url === studentLink;
   copyButton.hidden = !hosted;
-  studentShare.hidden = !studentQRs[app.id];
+  sendTeacher.hidden = !canSend({ url: shareURL(app) });
+  sendStudent.hidden = !studentLink || !canSend({ url: studentLink });
+
+  const qr = studentQRs[app.id];
   qrPanel.open = false;
-  if (studentQRs[app.id]) {
-    document.querySelector("#student-note").textContent = app.studentNote;
-    studentQR.src = studentQRs[app.id];
-    studentQR.alt = app.title + " 원본 주소로 연결하는 QR 코드";
+  qrPanel.hidden = !qr;
+  if (qr) {
+    studentQR.src = qr;
+    studentQR.alt = app.title + " 학생용 링크 QR 코드";
   } else {
     studentQR.removeAttribute("src");
     studentQR.alt = "";
   }
-  copyStatus.textContent = "";
-  copyValue.hidden = true;
-  if (!detail.open) detail.showModal();
+  clearShareFeedback();
+  shareDialog.showModal();
+  shareDialog.scrollTop = 0;
 }
+
+document.querySelector("#share-close").addEventListener("click", () => shareDialog.close());
 
 function shareURL(app) {
   if (!hosted) return app.url;
@@ -328,32 +366,66 @@ function teacherMessage(app) {
   return guide.join("\n");
 }
 
-async function copySharedText(app, value, successMessage) {
+function clearShareFeedback() {
+  for (const status of shareStatuses) status.textContent = "";
+  copyValue.hidden = true;
+}
+
+function activeShareStatus(button) {
+  clearShareFeedback();
+  return button.closest(".share-panel").querySelector(".copy-state");
+}
+
+async function copySharedText(button, value, successMessage) {
+  const status = activeShareStatus(button);
+  const request = ++shareRequest;
   try {
     await navigator.clipboard.writeText(value);
-    if (detailApp !== app) return;
-    copyValue.hidden = true;
-    copyStatus.textContent = successMessage;
+    if (!shareDialog.open || request !== shareRequest) return;
+    status.textContent = successMessage;
   } catch {
-    if (detailApp !== app) return;
+    if (!shareDialog.open || request !== shareRequest) return;
     copyValue.value = value;
     copyValue.hidden = false;
-    copyStatus.textContent = "아래 내용을 선택해 복사하세요.";
+    status.textContent = "아래 내용을 선택해 복사하세요.";
+    status.after(copyValue);
     copyValue.focus();
     copyValue.select();
   }
 }
 
+function canSend(data) {
+  return typeof navigator.share === "function" && (navigator.canShare?.(data) ?? true);
+}
+
+async function sendSharedLink(button, data) {
+  const status = activeShareStatus(button);
+  const request = ++shareRequest;
+  try {
+    await navigator.share(data);
+  } catch (error) {
+    if (!shareDialog.open || request !== shareRequest || error.name === "AbortError") return;
+    status.textContent = "공유 메뉴를 열 수 없어요. 복사 버튼을 이용해 주세요.";
+  }
+}
+
 copyButton.addEventListener("click", () => {
-  if (detailApp) copySharedText(detailApp, shareURL(detailApp), "상세 링크를 복사했습니다.");
+  copySharedText(copyButton, shareURL(sharedApp), "상세 링크를 복사했습니다.");
 });
 copyTeacher.addEventListener("click", () => {
-  if (detailApp) copySharedText(detailApp, teacherMessage(detailApp), "교사용 안내를 복사했습니다.");
+  copySharedText(copyTeacher, teacherMessage(sharedApp), "교사용 안내를 복사했습니다.");
 });
 copyStudent.addEventListener("click", () => {
-  if (detailApp && studentQRs[detailApp.id]) {
-    copySharedText(detailApp, detailApp.url, "학생용 링크를 복사했습니다.");
-  }
+  copySharedText(copyStudent, studentURL(sharedApp), "학생용 링크를 복사했습니다.");
+});
+copyOriginal.addEventListener("click", () => {
+  copySharedText(copyOriginal, sharedApp.url, "원본 앱 주소를 복사했습니다.");
+});
+sendTeacher.addEventListener("click", () => {
+  sendSharedLink(sendTeacher, { title: sharedApp.title, text: sharedApp.desc, url: shareURL(sharedApp) });
+});
+sendStudent.addEventListener("click", () => {
+  sendSharedLink(sendStudent, { title: sharedApp.title, text: sharedApp.studentNote, url: studentURL(sharedApp) });
 });
 
 function matchesFilters(entry, filters) {
@@ -400,8 +472,11 @@ function update() {
   const topic = topics.includes(params.get("topic")) ? params.get("topic") : "";
   const creator = creators.includes(params.get("creator")) ? params.get("creator") : "";
   const savedOnly = params.get("saved") === "1";
+  const filterTotal = Number(Boolean(creator)) + Number(Boolean(topic));
   if (search.value !== q) search.value = q;
   clear.hidden = q.length === 0;
+  catalog.classList.toggle("is-filtering", Boolean(q.trim() || filterTotal));
+  filterCount.textContent = filterTotal ? " " + filterTotal : "";
   topicSelect.value = topic;
   favoriteFilter.setAttribute("aria-pressed", String(savedOnly));
   for (const button of creatorFilters.children) {
@@ -418,7 +493,7 @@ function update() {
     .sort((a, b) => b.priority - a.priority);
   cards.replaceChildren(...shown.map(({ app }) => makeCard(app)));
 
-  results.textContent = [creator, topic, savedOnly ? "즐겨찾기" : "", shown.length + "개"].filter(Boolean).join(" · ");
+  results.textContent = [creator, topic, savedOnly ? "즐겨찾기" : "", "앱 " + shown.length + "개"].filter(Boolean).join(" · ");
   reset.hidden = !q && !topic && !creator && !savedOnly;
   empty.hidden = shown.length > 0;
   if (shown.length === 0) {
@@ -453,9 +528,13 @@ for (const creator of ["", ...creators]) {
   });
   creatorFilters.append(button);
 }
-topicSelect.add(new Option("주제 선택", ""));
+topicSelect.add(new Option("모든 주제", ""));
 for (const topic of topics) topicSelect.add(new Option(topic, topic));
 
+filterToggle.addEventListener("click", () => {
+  const expanded = filterToggle.getAttribute("aria-expanded") === "true";
+  filterToggle.setAttribute("aria-expanded", String(!expanded));
+});
 topicSelect.addEventListener("change", () => {
   setParams({ topic: topicSelect.value });
   update();
@@ -473,6 +552,12 @@ search.addEventListener("input", event => {
   if (!event.isComposing) applySearch();
 });
 search.addEventListener("compositionend", applySearch);
+document.querySelector("#search-form").addEventListener("submit", event => {
+  event.preventDefault();
+  applySearch();
+  filterToggle.setAttribute("aria-expanded", "false");
+  search.blur();
+});
 clear.addEventListener("click", () => {
   setParams({ q: "" });
   update();
@@ -508,7 +593,10 @@ detail.addEventListener("click", event => {
   const box = detail.getBoundingClientRect();
   if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeAppDetail();
 });
-window.addEventListener("popstate", update);
+window.addEventListener("popstate", () => {
+  if (shareDialog.open) shareDialog.close();
+  update();
+});
 window.addEventListener("storage", event => {
   if (event.key !== favoriteKey && event.key !== pinKey && event.key !== null) return;
   favorites = readFavorites();

@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#fbf7ef">
 <title>엽떡스쿨 — 수업에 바로 쓰는 바이브코딩 앱</title>
 <meta name="description" content="엽쌤스쿨과 찰떡쌤이 만든 수업, 학급 운영, 교사 업무용 바이브코딩 앱 모음">
-<link rel="stylesheet" href="./assets/styles.css">
-<script defer src="./assets/catalog-data.js"></script>
-<script defer src="./assets/catalog.js"></script>
+<link rel="stylesheet" href="./assets/styles.css?v=2">
+<script defer src="./assets/catalog-data.js?v=2"></script>
+<script defer src="./assets/catalog.js?v=2"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -37,27 +37,28 @@
   <section class="catalog" id="catalog" aria-labelledby="catalog-title">
     <div class="catalog-head">
       <h2 id="catalog-title">앱 찾아보기</h2>
-      <div class="search">
+      <form class="search" id="search-form" role="search">
         <span class="magnifier" aria-hidden="true"></span>
         <label class="sr-only" for="search">앱 이름이나 활용 키워드 검색</label>
-        <input id="search" type="search" maxlength="80" placeholder="앱 이름 또는 키워드 (예: 5학년 역사)" autocomplete="off">
+        <input id="search" type="search" maxlength="80" placeholder="앱 이름 또는 키워드 (예: 5학년 역사)" autocomplete="off" enterkeyhint="search">
         <button id="clear" class="clear" type="button" aria-label="검색어 지우기" hidden>×</button>
-      </div>
+      </form>
     </div>
     <section class="quick-apps" id="quick-apps" aria-labelledby="quick-title" hidden>
       <h3 id="quick-title">자주 쓰는 앱</h3>
-      <ul id="quick-list"></ul>
       <button id="quick-edit" class="secondary quick-edit" type="button">고정 순서 편집</button>
+      <ul id="quick-list"></ul>
     </section>
     <div class="filters">
-      <div id="creators" class="creator-filters" role="group" aria-label="제작자 필터"></div>
-      <div class="tools">
+      <button id="filter-toggle" class="filter" type="button" aria-expanded="false" aria-controls="filter-fields">필터<span id="filter-count"></span></button>
+      <div class="filter-fields" id="filter-fields">
+        <div id="creators" class="creator-filters" role="group" aria-label="제작자 필터"></div>
         <div class="topic-picker">
           <label class="sr-only" for="topics">주제 선택</label>
           <select id="topics" class="topic-select"></select>
         </div>
-        <button id="favorite-filter" class="filter" type="button" aria-pressed="false">★ 즐겨찾기</button>
       </div>
+      <button id="favorite-filter" class="filter" type="button" aria-pressed="false">★ 즐겨찾기</button>
     </div>
     <div class="selection">
       <p id="results" role="status"></p>
@@ -101,44 +102,64 @@
     <p id="quick-status" class="copy-state" role="status"></p>
   </form>
 </dialog>
-<dialog id="detail" aria-labelledby="detail-title">
+<dialog id="detail" class="app-dialog" aria-labelledby="detail-title">
   <div class="dialog-header">
     <div><p class="meta" id="detail-meta"></p><h2 id="detail-title"></h2></div>
     <button type="button" class="close" id="close" aria-label="상세 닫기" autofocus>×</button>
   </div>
-  <p id="detail-desc"></p>
-  <dl class="detail-terms">
-    <dt>이용 방법</dt><dd id="detail-access"></dd>
-    <dt id="detail-steps-label" hidden>처음 쓰는 순서</dt>
-    <dd id="detail-steps-block" hidden><ol class="detail-steps" id="detail-steps"></ol></dd>
-    <dt>활용 예시</dt><dd id="detail-tip"></dd>
-  </dl>
-  <div class="detail-actions">
-    <a class="primary" id="detail-link" target="_blank" rel="noopener noreferrer"></a>
-  </div>
-  <section id="detail-shortcuts" aria-labelledby="shortcut-title" hidden>
-    <h3 id="shortcut-title">바로가기</h3>
-    <div class="detail-actions" id="shortcut-links"></div>
-  </section>
-  <p class="link-check" id="detail-link-check"></p>
-  <section class="share-panel" aria-labelledby="teacher-share-title">
-    <h3 id="teacher-share-title">동료 교사에게 공유</h3>
+  <div class="dialog-body">
+    <p id="detail-desc"></p>
     <div class="detail-actions">
-      <button type="button" class="secondary" id="copy-teacher">교사용 안내 복사</button>
-      <button type="button" class="secondary" id="copy-link" hidden>상세 링크 복사</button>
+      <a class="primary" id="detail-link" target="_blank" rel="noopener noreferrer"></a>
+      <button type="button" class="secondary" id="detail-share" aria-haspopup="dialog">공유하기</button>
     </div>
-  </section>
-  <section class="share-panel" id="student-share" aria-labelledby="student-share-title" hidden>
-    <h3 id="student-share-title">학생에게 공유</h3>
-    <p id="student-note"></p>
-    <button type="button" class="secondary" id="copy-student">학생용 링크 복사</button>
-    <details id="student-qr-panel">
-      <summary>교실 화면에 QR 띄우기</summary>
-      <img class="student-qr" id="student-qr" alt="" width="300" height="300" loading="lazy">
-    </details>
-  </section>
-  <p class="copy-state" id="copy-status" role="status"></p>
-  <textarea id="copy-value" class="copy-value" aria-label="복사할 내용" rows="4" readonly hidden></textarea>
+    <section id="detail-shortcuts" aria-labelledby="shortcut-title" hidden>
+      <h3 id="shortcut-title">바로가기</h3>
+      <div class="detail-actions" id="shortcut-links"></div>
+    </section>
+    <dl class="detail-terms">
+      <dt>이용 방법</dt><dd id="detail-access"></dd>
+      <dt id="detail-steps-label" hidden>처음 쓰는 순서</dt>
+      <dd id="detail-steps-block" hidden><ol class="detail-steps" id="detail-steps"></ol></dd>
+      <dt>활용 예시</dt><dd id="detail-tip"></dd>
+    </dl>
+    <p class="link-check" id="detail-link-check"></p>
+  </div>
+</dialog>
+<dialog id="share-dialog" class="app-dialog" aria-labelledby="share-title" aria-describedby="share-app-name">
+  <div class="dialog-header">
+    <div><h2 id="share-title">앱 공유</h2><p id="share-app-name"></p></div>
+    <button type="button" class="close" id="share-close" aria-label="공유 닫기" autofocus>×</button>
+  </div>
+  <div class="dialog-body">
+    <section class="share-panel" id="student-share" aria-labelledby="student-share-title" hidden>
+      <h3 id="student-share-title">학생에게</h3>
+      <p id="student-note"></p>
+      <div class="detail-actions">
+        <button type="button" class="primary" id="send-student" hidden>학생용 링크 보내기</button>
+        <button type="button" class="secondary" id="copy-student">학생용 링크 복사</button>
+      </div>
+      <p class="copy-state" role="status"></p>
+      <details id="student-qr-panel">
+        <summary>교실 화면에 QR 띄우기</summary>
+        <img class="student-qr" id="student-qr" alt="" width="300" height="300" loading="lazy">
+      </details>
+    </section>
+    <section class="share-panel" aria-labelledby="teacher-share-title">
+      <h3 id="teacher-share-title">동료 교사에게</h3>
+      <div class="detail-actions">
+        <button type="button" class="primary" id="send-teacher" hidden>앱 안내 보내기</button>
+        <button type="button" class="secondary" id="copy-link" hidden>상세 링크 복사</button>
+        <button type="button" class="secondary" id="copy-teacher">교사용 안내 복사</button>
+      </div>
+      <p class="copy-state" role="status"></p>
+    </section>
+    <section class="share-panel" id="original-share" aria-label="원본 앱 주소">
+      <button type="button" class="secondary" id="copy-original">원본 앱 주소 복사</button>
+      <p class="copy-state" role="status"></p>
+    </section>
+    <textarea id="copy-value" class="copy-value" aria-label="복사할 내용" rows="3" readonly hidden></textarea>
+  </div>
 </dialog>
 <template id="card-template">
   <article class="card">
@@ -157,7 +178,8 @@
       <p class="access" hidden></p>
       <div class="card-actions">
         <a class="primary" target="_blank" rel="noopener noreferrer"></a>
-        <button class="secondary" type="button">활용 보기</button>
+        <button class="secondary card-detail" type="button" aria-haspopup="dialog">활용 보기</button>
+        <button class="secondary card-share" type="button" aria-haspopup="dialog">공유</button>
       </div>
     </div>
   </article>

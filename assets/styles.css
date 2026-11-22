@@ -211,3 +211,11 @@ body:has(dialog[open]) { overflow: hidden; }
 #detail-shortcuts { margin-top: .8rem; }
 #detail-shortcuts h3 { margin: 0 0 .3rem; font-size: 1rem; }
 .shortcut-note { font-weight: 600; color: var(--muted); margin-left: .4em; }
+/* 엽쌤 앱 공통: 📲 앱 설치 · 📱 QR, 하단 문구 */
+.ys-chip { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 11px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: inherit; font: inherit; font-size: .82rem; font-weight: 750; white-space: nowrap; cursor: pointer; }
+.ys-chip:hover { color: var(--brick-dark); }
+.ys-credit { padding: 22px 0 30px; font-size: .78rem; opacity: .75; text-align: center; }
+.ys-credit a { text-decoration: underline; }
+@media (max-width: 580px) { .ys-wide { display: none; } .ys-chip { padding: 0 8px; min-height: 34px; } }
+.site-nav a { white-space: nowrap; }
+@media (max-width: 400px) { .site-nav { gap: 6px; } .site-nav a[href="#about"] { display: none; } }

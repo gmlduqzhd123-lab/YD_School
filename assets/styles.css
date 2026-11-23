@@ -47,6 +47,11 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .search input { flex: 1; width: 100%; min-width: 0; padding: 8px 0; border: 0; outline: none; background: transparent; color: var(--ink); font-size: 1rem; }
 .search input::placeholder { opacity: 1; color: #74655c; }
 .search input::-webkit-search-cancel-button { display: none; }
+.search .search-submit { display: none; flex: none; }
+@media (max-width: 580px), (pointer: coarse) {
+  .search { gap: 6px; }
+  .search .search-submit { display: inline-flex; }
+}
 .magnifier { position: relative; width: 15px; height: 15px; margin-right: 4px; border: 2px solid #78665c; border-radius: 50%; flex: none; }
 .magnifier::after { content: ""; position: absolute; width: 7px; height: 2px; right: -6px; bottom: -3px; transform: rotate(45deg); background: #78665c; }
 .clear { flex: none; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 1.35rem; border-radius: 5px; }
@@ -67,6 +72,9 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .topic-select { width: 100%; padding-inline-end: 1.9rem; appearance: none; cursor: pointer; }
 .selection { min-height: 28px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 7px; }
 .selection p { margin: 0; font-size: .86rem; font-weight: 700; color: var(--muted); overflow-wrap: anywhere; }
+.active-filters { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: .55rem; }
+.active-filters .filter { background: #f6ded3; border-color: #bd887a; color: var(--brick-dark); }
+.active-filters .filter:hover { background: #f0d3c6; }
 .reset-link { min-height: 44px; flex: none; padding: 0 .2rem; border: 0; background: transparent; color: var(--brick-dark); font-size: .84rem; font-weight: 750; text-decoration: underline; text-underline-offset: 3px; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .card { display: flex; flex-direction: column; min-width: 0; border: 1px solid #e1d4c5; border-radius: 12px; padding: 12px; background: var(--paper); }

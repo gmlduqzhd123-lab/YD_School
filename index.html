@@ -17,11 +17,11 @@
 <link rel="icon" href="./icons/favicon-32.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="엽떡스쿨">
-<link rel="stylesheet" href="./assets/styles.css?v=12">
+<link rel="stylesheet" href="./assets/styles.css?v=13">
 <script defer src="./ys-install.js"></script>
 <script defer src="./ys-qr.js"></script>
 <script defer src="./assets/catalog-data.js?v=4"></script>
-<script defer src="./assets/catalog.js?v=12"></script>
+<script defer src="./assets/catalog.js?v=13"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -58,6 +58,7 @@
           <label class="sr-only" for="search">앱 이름이나 수업 상황 검색</label>
           <input id="search" type="search" maxlength="80" placeholder="앱 이름·수업 상황 (예: 5학년 역사)" autocomplete="off" enterkeyhint="search">
           <button id="clear" class="clear" type="button" aria-label="검색어 지우기" hidden>×</button>
+          <button class="primary search-submit" type="submit">검색</button>
         </form>
         <div class="situation-search" id="situation-search" role="group" aria-label="수업 상황으로 검색"></div>
       </div>
@@ -83,6 +84,7 @@
       <p id="results" role="status" tabindex="-1"></p>
       <button type="button" class="reset-link" id="reset" hidden>조건 초기화</button>
     </div>
+    <div class="active-filters" id="active-filters" role="group" aria-label="적용된 필터" hidden></div>
     <p id="favorite-status" class="sr-only" role="status"></p>
     <div id="missing-app" class="empty" hidden>
       <p role="status">현재 목록에 없는 앱입니다.</p>
@@ -91,7 +93,7 @@
     <noscript><p class="empty">앱 목록을 보려면 브라우저에서 JavaScript를 켜 주세요.</p></noscript>
     <div id="cards" class="grid"></div>
     <div id="empty" class="empty" hidden>
-      <p id="empty-message"></p>
+      <p id="empty-message" tabindex="-1"></p>
       <div class="empty-actions" id="empty-actions"></div>
     </div>
   </section>

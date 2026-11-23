@@ -12,6 +12,9 @@ const clear = document.querySelector("#clear");
 const cards = document.querySelector("#cards");
 const results = document.querySelector("#results");
 const empty = document.querySelector("#empty");
+const emptyMessage = document.querySelector("#empty-message");
+const activeFilters = document.querySelector("#active-filters");
+const mobileSearch = matchMedia("(max-width: 580px), (pointer: coarse)");
 const reset = document.querySelector("#reset");
 const template = document.querySelector("#card-template");
 const detail = document.querySelector("#detail");
@@ -753,18 +756,61 @@ function relatedTopicSuggestions(query, filters) {
   }).slice(0, 2).map(topic => ({ label: topic + " 앱 보기", changes: { q: "", topic } }));
 }
 
-function showSearchRecovery(queryMatches, filters, query) {
-  const suggestions = [
-    { key: "creator", label: "모든 제작자에서 다시 검색", changes: { creator: "" } },
-    { key: "topic", label: "모든 주제에서 다시 검색", changes: { topic: "" } },
-    { key: "savedOnly", label: "즐겨찾기 밖에서도 검색", changes: { saved: "" } },
-    { key: "studentOnly", label: "학생 링크 조건을 풀고 검색", changes: { student: "" } }
-  ].filter(({ key }) => filters[key]
-    && queryMatches.some(entry => matchesFilters(entry, { ...filters, [key]: false })));
+function renderActiveFilters(active) {
+  activeFilters.hidden = active.length === 0;
+  activeFilters.replaceChildren(...active.map(({ param, label }, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "filter";
+    button.textContent = `${label} ×`;
+    button.setAttribute("aria-label", `${label} 필터 해제`);
+    button.addEventListener("click", () => {
+      setParams({ [param]: "" });
+      update();
+      const target = activeFilters.children[index] || activeFilters.lastElementChild || results;
+      target.focus({ preventScroll: true });
+    });
+    return button;
+  }));
+}
 
-  if (!suggestions.length && queryMatches.length) {
-    suggestions.push({ label: "필터를 풀고 다시 검색", changes: clearFilters });
+function filterRecoverySuggestions(queryMatches, filters, active) {
+  const groups = new Map();
+  for (const entry of queryMatches) {
+    const blocked = active.filter(({ key }) => !matchesFilters(entry, { [key]: filters[key] }));
+    if (!blocked.length) continue;
+    const signature = blocked.map(({ param }) => param).join(",");
+    const group = groups.get(signature);
+    if (group) group.count++;
+    else groups.set(signature, { blocked, count: 1 });
   }
+  const ranked = [...groups.values()].sort((a, b) => a.blocked.length - b.blocked.length || b.count - a.count);
+  return ranked.filter(({ blocked }) => blocked.length === ranked[0].blocked.length).slice(0, 3).map(({ blocked, count }) => ({
+    label: `${blocked.map(({ label }) => label).join("·")} 조건 해제 (앱 ${count}개)`,
+    changes: Object.fromEntries(blocked.map(({ param }) => [param, ""]))
+  }));
+}
+
+function revealResults() {
+  const target = empty.hidden ? results : emptyMessage;
+  const viewport = window.visualViewport;
+  const keyboardMayBeOpen = viewport && viewport.height < window.innerHeight - 80;
+  target.focus({ preventScroll: true });
+  if (!mobileSearch.matches) return;
+
+  const show = () => {
+    if (document.activeElement === target) target.scrollIntoView({ block: "start", behavior: "instant" });
+  };
+  requestAnimationFrame(show);
+  if (keyboardMayBeOpen) {
+    const controller = new AbortController();
+    viewport.addEventListener("resize", show, { signal: controller.signal });
+    setTimeout(() => controller.abort(), 550);
+  }
+}
+
+function showSearchRecovery(queryMatches, filters, active, query) {
+  const suggestions = filterRecoverySuggestions(queryMatches, filters, active);
   if (!queryMatches.length && query) {
     suggestions.push(...relatedTopicSuggestions(query, filters));
   }
@@ -778,7 +824,7 @@ function showSearchRecovery(queryMatches, filters, query) {
     button.addEventListener("click", () => {
       setParams(changes);
       update();
-      results.focus({ preventScroll: true });
+      revealResults();
     });
     return button;
   }));
@@ -809,6 +855,12 @@ function update() {
     button.setAttribute("aria-pressed", String(button.dataset.query === query));
   }
   const filters = { topic, creator, savedOnly, studentOnly };
+  const active = [
+    { key: "creator", param: "creator", label: creator },
+    { key: "topic", param: "topic", label: topic },
+    { key: "studentOnly", param: "student", label: "학생 링크" },
+    { key: "savedOnly", param: "saved", label: "즐겨찾기" }
+  ].filter(({ key }) => filters[key]);
   const queryMatches = appIndex
     .map(entry => ({ app: entry.app, priority: matchingPriority(entry, words, query) }))
     .filter(entry => entry.priority >= 0);
@@ -817,14 +869,15 @@ function update() {
   catalogResults = shown.map(({ app }) => app);
   cards.replaceChildren(...catalogResults.map(makeCard));
 
-  results.textContent = [creator, topic, studentOnly ? "학생 링크" : "", savedOnly ? "즐겨찾기" : "", "앱 " + shown.length + "개"].filter(Boolean).join(" · ");
+  results.textContent = `앱 ${shown.length}개`;
+  renderActiveFilters(active);
   reset.hidden = !q && !topic && !creator && !savedOnly && !studentOnly;
   empty.hidden = shown.length > 0;
   if (shown.length === 0) {
-    document.querySelector("#empty-message").textContent = savedOnly && favorites.size === 0
+    emptyMessage.textContent = savedOnly && favorites.size === 0
       ? "아직 즐겨찾기한 앱이 없어요. 앱 카드의 별을 눌러 추가해 보세요."
       : "조건에 맞는 앱이 없어요.";
-    showSearchRecovery(queryMatches, filters, q);
+    showSearchRecovery(queryMatches, filters, active, q);
   } else {
     emptyActions.replaceChildren();
   }
@@ -899,7 +952,8 @@ document.querySelector("#search-form").addEventListener("submit", event => {
   event.preventDefault();
   applySearch();
   filterToggle.setAttribute("aria-expanded", "false");
-  search.blur();
+  if (mobileSearch.matches) revealResults();
+  else search.blur();
 });
 clear.addEventListener("click", () => {
   setParams({ q: "" });

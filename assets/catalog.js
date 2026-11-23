@@ -450,10 +450,17 @@ function accessLabels(app) {
   return [...new Set(labels)];
 }
 
-function setThumbnail(image, app) {
+function setThumbnail(image, app, desktopSource = null) {
   const src = thumbnails[app.id];
   image.hidden = !src;
-  image.onerror = () => { image.hidden = true; };
+  image.onerror = () => {
+    if (desktopSource?.hasAttribute("srcset") && matchMedia(desktopSource.media).matches) {
+      desktopSource.removeAttribute("srcset");
+      return;
+    }
+    image.hidden = true;
+  };
+  if (desktopSource && src) desktopSource.srcset = `./assets/previews-desktop/${app.id}.webp`;
   if (src) image.src = src;
   else image.removeAttribute("src");
 }
@@ -471,7 +478,7 @@ function makeCard(app) {
 
   const preview = card.querySelector(".card-preview");
   preview.setAttribute("aria-label", app.title + " 앱 화면 미리보기");
-  setThumbnail(preview.querySelector("img"), app);
+  setThumbnail(preview.querySelector("img"), app, preview.querySelector("source"));
   preview.addEventListener("click", () => showPreview(app, preview));
 
   const opener = card.querySelector(".card-detail");

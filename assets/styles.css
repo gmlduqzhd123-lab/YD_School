@@ -227,3 +227,8 @@ body:has(dialog[open]) { overflow: hidden; }
 @media (max-width: 580px) { .ys-wide { display: none; } .ys-chip { padding: 0 8px; min-height: 34px; } }
 .site-nav a { white-space: nowrap; }
 @media (max-width: 400px) { .site-nav { gap: 6px; } .site-nav a[href="#about"] { display: none; } }
+@media (max-width: 350px) {
+  .site-header .wrap { flex-wrap: wrap; gap: 0 5px; }
+  .site-nav { flex-wrap: wrap; gap: 4px; }
+  .ys-chip { padding-inline: 5px; }
+}

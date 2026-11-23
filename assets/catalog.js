@@ -44,6 +44,7 @@ const favoriteStatus = document.querySelector("#favorite-status");
 const copyButton = document.querySelector("#copy-link");
 const copyTeacher = document.querySelector("#copy-teacher");
 const copyStudent = document.querySelector("#copy-student");
+const copyStudentGuide = document.querySelector("#copy-student-guide");
 const copyOriginal = document.querySelector("#copy-original");
 const sendTeacher = document.querySelector("#send-teacher");
 const sendStudent = document.querySelector("#send-student");
@@ -727,6 +728,10 @@ copyTeacher.addEventListener("click", () => {
 });
 copyStudent.addEventListener("click", () => {
   copySharedText(copyStudent, studentURL(sharedApp), "학생용 링크를 복사했습니다.");
+});
+copyStudentGuide.addEventListener("click", () => {
+  const guide = [`[${sharedApp.title}]`, sharedApp.studentNote, studentURL(sharedApp)].join("\n");
+  copySharedText(copyStudentGuide, guide, "학생용 안내와 링크를 복사했습니다.");
 });
 copyOriginal.addEventListener("click", () => {
   copySharedText(copyOriginal, sharedApp.url, "원본 앱 주소를 복사했습니다.");

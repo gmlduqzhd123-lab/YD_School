@@ -8,6 +8,7 @@ const clearFilters = {
 };
 const favoriteKey = "yeoptteok-school-favorites";
 const lessonPrefix = "yeoptteok-school-lesson:";
+const lessonFileFormat = "yeoptteok-school-lesson";
 const hosted = location.protocol === "https:" || location.protocol === "http:";
 
 const search = document.querySelector("#search");
@@ -81,6 +82,8 @@ const lessonListView = document.querySelector("#lesson-list-view");
 const lessonList = document.querySelector("#lesson-list");
 const lessonEmpty = document.querySelector("#lesson-empty");
 const lessonCreate = document.querySelector("#lesson-create");
+const lessonImport = document.querySelector("#lesson-import");
+const lessonFile = document.querySelector("#lesson-file");
 const lessonListStatus = document.querySelector("#lesson-list-status");
 const lessonEditor = document.querySelector("#lesson-editor");
 const lessonName = document.querySelector("#lesson-name");
@@ -259,6 +262,10 @@ quickForm.addEventListener("submit", event => {
   quickDialog.close();
 });
 
+function resolveLessonAppId(id) {
+  return byId.has(id) ? id : appAliases.get(id);
+}
+
 function readLessonBundle(key) {
   try {
     const saved = JSON.parse(localStorage.getItem(key));
@@ -266,7 +273,7 @@ function readLessonBundle(key) {
     return {
       id: key.slice(lessonPrefix.length),
       name: saved.name,
-      appIds: [...new Set(saved.appIds)].filter(id => byId.has(id)),
+      appIds: [...new Set(saved.appIds.map(resolveLessonAppId).filter(Boolean))],
       createdAt: Number.isFinite(saved.createdAt) ? saved.createdAt : 0
     };
   } catch {
@@ -281,6 +288,49 @@ function readLessonBundles() {
   } catch {
     return [];
   }
+}
+
+function storeLessonBundle(name, appIds, original = null) {
+  const id = original?.id ?? crypto.randomUUID();
+  const createdAt = original?.createdAt ?? Date.now();
+  localStorage.setItem(lessonPrefix + id, JSON.stringify({ name, appIds, createdAt }));
+  return id;
+}
+
+function exportLessonBundle({ name, appIds }) {
+  const data = JSON.stringify({ format: lessonFileFormat, version: 1, name, appIds }, null, 2);
+  const file = new Blob([data + "\n"], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  const filename = name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").trim();
+  link.href = url;
+  link.download = `엽떡스쿨-${filename || "수업 묶음"}.json`;
+  link.hidden = true;
+  lessonDialog.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function parseLessonFile(text) {
+  let data;
+  try {
+    data = JSON.parse(text.replace(/^\uFEFF/, ""));
+  } catch {
+    throw new Error("파일 내용을 읽을 수 없어요. 엽떡스쿨에서 내보낸 파일을 선택하세요.");
+  }
+  if (data?.format !== lessonFileFormat || data.version !== 1) {
+    throw new Error("지원하는 엽떡스쿨 수업 묶음 파일을 선택하세요.");
+  }
+  const name = typeof data.name === "string" ? data.name.trim() : "";
+  if (!name || name.length > lessonName.maxLength || !Array.isArray(data.appIds) || !data.appIds.length
+    || !data.appIds.every(id => typeof id === "string" && id.trim())) {
+    throw new Error("묶음 이름이나 앱 순서가 잘못된 파일이에요.");
+  }
+  const ids = [...new Set(data.appIds)];
+  const resolved = ids.map(resolveLessonAppId).filter(Boolean);
+  if (!resolved.length) throw new Error("이 파일에서 현재 사용할 수 있는 앱을 찾지 못했어요.");
+  return { name, appIds: [...new Set(resolved)], unavailable: ids.length - resolved.length };
 }
 
 function renderLessonList(openId = lessonList.querySelector("details[open]")?.dataset.id) {
@@ -319,7 +369,19 @@ function renderLessonList(openId = lessonList.querySelector("details[open]")?.da
     edit.textContent = "편집";
     edit.setAttribute("aria-label", `${lesson.name} 편집`);
     edit.addEventListener("click", () => openLessonEditor(lesson));
-    body.append(edit);
+    const actions = document.createElement("div");
+    actions.className = "detail-actions";
+    actions.append(edit);
+    if (lesson.appIds.length) {
+      const download = document.createElement("button");
+      download.type = "button";
+      download.className = "secondary";
+      download.textContent = "내보내기";
+      download.setAttribute("aria-label", `${lesson.name} 내보내기`);
+      download.addEventListener("click", () => exportLessonBundle(lesson));
+      actions.append(download);
+    }
+    body.append(actions);
     bundle.append(summary, body);
     return bundle;
   }));
@@ -380,14 +442,14 @@ function openLessonEditor(lesson = null) {
   lessonName.focus();
 }
 
-function closeLessonEditor(openId, message = "") {
+function showLessonList(openId, message = "") {
   lessonEditor.hidden = true;
   lessonListView.hidden = false;
   renderLessonList(openId);
   lessonListStatus.textContent = message;
   lessonDialog.scrollTop = 0;
   const target = lessonList.querySelector("details[open] summary") || lessonCreate;
-  target.focus({ preventScroll: true });
+  target.focus();
 }
 
 document.querySelector("#lesson-bundles-open").addEventListener("click", () => {
@@ -400,7 +462,35 @@ document.querySelector("#lesson-bundles-open").addEventListener("click", () => {
 });
 document.querySelector("#lesson-bundles-close").addEventListener("click", () => lessonDialog.close());
 lessonCreate.addEventListener("click", () => openLessonEditor());
-document.querySelector("#lesson-cancel").addEventListener("click", () => closeLessonEditor(editingLesson?.id));
+document.querySelector("#lesson-cancel").addEventListener("click", () => showLessonList(editingLesson?.id));
+lessonImport.addEventListener("click", () => lessonFile.click());
+lessonFile.addEventListener("change", async () => {
+  const [file] = lessonFile.files;
+  lessonFile.value = "";
+  if (!file || lessonImport.disabled) return;
+  lessonImport.disabled = true;
+  try {
+    if (file.size > 64 * 1024) throw new Error("파일이 너무 커요. 수업 묶음 JSON 파일을 선택하세요.");
+    const { name, appIds, unavailable } = parseLessonFile(await file.text());
+    const previous = readLessonBundles().find(lesson => lesson.name === name
+      && lesson.appIds.length === appIds.length && lesson.appIds.every((id, index) => id === appIds[index]));
+    let id = previous?.id;
+    if (!id) {
+      try {
+        id = storeLessonBundle(name, appIds);
+      } catch {
+        throw new Error("브라우저 저장 공간을 사용할 수 없어 묶음을 가져오지 못했어요.");
+      }
+    }
+    const message = previous ? "같은 이름과 앱 순서의 묶음을 열었어요." : "수업 묶음을 가져왔습니다.";
+    const notice = unavailable ? ` 현재 목록에 없는 앱 ${unavailable}개를 제외했어요.` : "";
+    if (lessonDialog.open && lessonEditor.hidden) showLessonList(id, message + notice);
+  } catch (error) {
+    lessonListStatus.textContent = error.message || "수업 묶음 파일을 읽지 못했어요.";
+  } finally {
+    lessonImport.disabled = false;
+  }
+});
 function applyLessonSearch() {
   renderLessonChoices();
   lessonChoices.scrollTop = 0;
@@ -459,15 +549,14 @@ lessonEditor.addEventListener("submit", event => {
     lessonSearch.focus();
     return;
   }
-  const id = editingLesson?.id ?? crypto.randomUUID();
-  const createdAt = editingLesson?.createdAt ?? Date.now();
+  let id;
   try {
-    localStorage.setItem(lessonPrefix + id, JSON.stringify({ name, appIds: draftLessonApps, createdAt }));
+    id = storeLessonBundle(name, draftLessonApps, editingLesson);
   } catch {
     lessonEditorStatus.textContent = "브라우저 저장 공간을 사용할 수 없어 묶음을 저장하지 못했어요.";
     return;
   }
-  closeLessonEditor(id, "수업 묶음을 저장했습니다.");
+  showLessonList(id, "수업 묶음을 저장했습니다.");
 });
 
 function configureLink(link, app, label = app.install ? "Windows 설치 안내" : "앱 열기") {

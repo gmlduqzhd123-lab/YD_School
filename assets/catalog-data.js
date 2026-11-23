@@ -1546,32 +1546,36 @@ const studentQRs = {
 const classroomSituations = [
   {
     label: "수업 도입",
-    keywords: ["도입 활동", "흥미 유발", "수업 시작"],
+    keywords: ["도입 활동", "흥미 유발", "동기 유발", "수업 시작"],
     appIds: ["history", "fire-safety", "halloween", "volleyball", "everything-class"],
     quickSearch: true
   },
   {
     label: "단원 복습",
-    keywords: ["단원 정리", "수업 마무리", "복습 퀴즈"],
+    keywords: ["단원 정리", "수업 마무리", "복습 퀴즈", "복습 게임", "배운 내용 확인"],
     appIds: ["math-studio", "math-survival", "history", "bingo", "math-marvel", "volleyball"],
     quickSearch: true
   },
   {
     label: "발표자 뽑기",
-    keywords: ["발표 순서", "발표자 추첨", "학생 뽑기"],
+    keywords: ["발표 순서", "발표 순번", "발표 차례", "발표자 추첨", "발표자 정하기", "학생 뽑기", "이름 뽑기", "랜덤 추첨", "무작위 추첨", "돌림판"],
     appIds: ["rollin-thunder", "runrun"],
     quickSearch: true
   },
   {
     label: "모둠 활동",
-    keywords: ["모둠 수업", "팀 활동", "팀 대항"],
+    keywords: ["모둠 수업", "모둠별 활동", "조별 활동", "팀 활동", "팀 대항"],
     appIds: ["sweat-expedition", "escape-class", "bingo"]
   },
   {
     label: "수업 자료 준비",
-    keywords: ["수업 준비", "교수 학습 자료", "자료 만들기"],
+    keywords: ["수업 준비", "교수 학습 자료", "자료 만들기", "수업 자료 만들기"],
     appIds: ["lesson-plan", "everything-class", "translation", "math-studio"]
   }
+];
+
+const searchEquivalentPhrases = [
+  ["가입 없이", "로그인 없이", "회원가입 없이", "계정 없이", "무가입", "무로그인"]
 ];
 
 const relatedTopicKeywords = {

@@ -77,12 +77,13 @@ const lessonListView = document.querySelector("#lesson-list-view");
 const lessonList = document.querySelector("#lesson-list");
 const lessonEmpty = document.querySelector("#lesson-empty");
 const lessonCreate = document.querySelector("#lesson-create");
-const lessonBrowse = document.querySelector("#lesson-browse");
 const lessonListStatus = document.querySelector("#lesson-list-status");
 const lessonEditor = document.querySelector("#lesson-editor");
 const lessonName = document.querySelector("#lesson-name");
-const lessonApp = document.querySelector("#lesson-app");
-const lessonAdd = document.querySelector("#lesson-add");
+const lessonSearch = document.querySelector("#lesson-search");
+const lessonSearchStatus = document.querySelector("#lesson-search-status");
+const lessonChoices = document.querySelector("#lesson-choices");
+const lessonOrderHeading = document.querySelector("#lesson-order-heading");
 const lessonOrder = document.querySelector("#lesson-order");
 const lessonEditorStatus = document.querySelector("#lesson-editor-status");
 const lessonRowTemplate = document.querySelector("#lesson-row-template");
@@ -116,6 +117,7 @@ function compact(text) {
 }
 
 const titleOrder = new Intl.Collator("ko", { numeric: true });
+const equivalentPhrases = searchEquivalentPhrases.map(group => group.map(compact));
 const appIndex = [...apps].sort((a, b) => titleOrder.compare(a.title, b.title)).map(app => {
   const situations = classroomSituations
     .filter(situation => situation.appIds.includes(app.id))
@@ -123,18 +125,22 @@ const appIndex = [...apps].sort((a, b) => titleOrder.compare(a.title, b.title)).
   const studentKeywords = studentURL(app)
     ? ["학생용 링크", "학생 링크", "학생 공유", "학생에게 공유"]
     : [];
-  return {
-    app,
-    fields: [
-      app.title, app.creator, app.desc, app.access, ...app.topics, ...app.keys, ...(app.tags || []),
-      ...accessLabels(app), ...situations, ...studentKeywords
-    ].map(compact)
-  };
+  const fields = [
+    app.title, app.creator, app.desc, app.access, ...app.topics, ...app.keys, ...(app.tags || []),
+    ...accessLabels(app), ...situations, ...studentKeywords
+  ].map(compact);
+  const aliases = equivalentPhrases.filter(group => group.some(phrase => fields.some(field => field.includes(phrase)))).flat();
+  return { app, fields: fields.concat(aliases) };
 });
 
 function matchesSearch(entry, words, query) {
   return !query || entry.fields.some(field => field.includes(query))
     || words.every(word => entry.fields.some(field => field.includes(word)));
+}
+
+function searchApps(words) {
+  const query = words.join("");
+  return appIndex.filter(entry => matchesSearch(entry, words, query));
 }
 
 function paramsNow() {
@@ -275,12 +281,7 @@ function readLessonBundles() {
 
 function renderLessonList(openId = lessonList.querySelector("details[open]")?.dataset.id) {
   const lessons = readLessonBundles();
-  lessonCreate.hidden = favorites.size === 0;
-  lessonBrowse.hidden = favorites.size > 0;
-  lessonEmpty.hidden = lessons.length > 0 && favorites.size > 0;
-  lessonEmpty.textContent = favorites.size > 0
-    ? "즐겨찾기한 앱을 골라 수업 순서대로 묶어보세요."
-    : "앱 카드에서 즐겨찾기에 추가하면 새 묶음을 만들 수 있어요.";
+  lessonEmpty.hidden = lessons.length > 0;
   lessonList.replaceChildren(...lessons.map(lesson => {
     const bundle = document.createElement("details");
     bundle.className = "lesson-bundle";
@@ -321,18 +322,32 @@ function renderLessonList(openId = lessonList.querySelector("details[open]")?.da
 }
 
 function renderLessonChoices() {
-  const selected = lessonApp.value;
-  const choices = [...favorites].filter(id => !draftLessonApps.includes(id)).map(id => byId.get(id))
-    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
-  lessonApp.replaceChildren(new Option(choices.length ? "앱 선택" : "추가할 즐겨찾기 앱 없음", ""),
-    ...choices.map(app => new Option(app.title, app.id)));
-  lessonApp.disabled = choices.length === 0;
-  lessonApp.value = choices.some(app => app.id === selected) ? selected : "";
-  lessonAdd.disabled = !lessonApp.value;
+  const matches = searchApps(normalizedWords(lessonSearch.value));
+  const choices = matches.filter(({ app }) => !draftLessonApps.includes(app.id));
+  const scrollTop = lessonChoices.scrollTop;
+  if (choices.length) lessonSearchStatus.textContent = `추가할 수 있는 앱 ${choices.length}개`;
+  else if (matches.length) lessonSearchStatus.textContent = "검색 결과의 앱은 이미 묶음에 들어 있어요.";
+  else lessonSearchStatus.textContent = "검색 결과가 없어요. 앱 이름이나 수업 상황을 바꿔 검색해 보세요.";
+  lessonChoices.replaceChildren(...choices.map(({ app }) => {
+    const item = document.createElement("li");
+    const title = document.createElement("span");
+    title.className = "lesson-app-title";
+    title.textContent = app.title;
+    const add = document.createElement("button");
+    add.className = "secondary";
+    add.type = "button";
+    add.dataset.appId = app.id;
+    add.textContent = "추가";
+    add.setAttribute("aria-label", `${app.title} 추가`);
+    item.append(title, add);
+    return item;
+  }));
+  lessonChoices.scrollTop = scrollTop;
 }
 
 function renderLessonOrder() {
   renderLessonChoices();
+  lessonOrderHeading.hidden = lessonOrder.hidden = !draftLessonApps.length;
   lessonOrder.replaceChildren(...draftLessonApps.map((id, index) => {
     const row = lessonRowTemplate.content.firstElementChild.cloneNode(true);
     const title = byId.get(id).title;
@@ -354,8 +369,9 @@ function openLessonEditor(lesson = null) {
   lessonEditorStatus.textContent = "";
   lessonListView.hidden = true;
   lessonEditor.hidden = false;
-  lessonApp.value = "";
+  lessonSearch.value = "";
   renderLessonOrder();
+  lessonChoices.scrollTop = 0;
   lessonDialog.scrollTop = 0;
   lessonName.focus();
 }
@@ -366,7 +382,7 @@ function closeLessonEditor(openId, message = "") {
   renderLessonList(openId);
   lessonListStatus.textContent = message;
   lessonDialog.scrollTop = 0;
-  const target = lessonList.querySelector("details[open] summary") || (favorites.size ? lessonCreate : lessonBrowse);
+  const target = lessonList.querySelector("details[open] summary") || lessonCreate;
   target.focus({ preventScroll: true });
 }
 
@@ -379,17 +395,33 @@ document.querySelector("#lesson-bundles-open").addEventListener("click", () => {
   lessonDialog.scrollTop = 0;
 });
 document.querySelector("#lesson-bundles-close").addEventListener("click", () => lessonDialog.close());
-lessonBrowse.addEventListener("click", () => lessonDialog.close());
 lessonCreate.addEventListener("click", () => openLessonEditor());
 document.querySelector("#lesson-cancel").addEventListener("click", () => closeLessonEditor(editingLesson?.id));
-lessonApp.addEventListener("change", () => { lessonAdd.disabled = !lessonApp.value; });
-lessonAdd.addEventListener("click", () => {
-  const id = lessonApp.value;
-  if (!favorites.has(id) || draftLessonApps.includes(id)) return;
+function applyLessonSearch() {
+  renderLessonChoices();
+  lessonChoices.scrollTop = 0;
+}
+lessonSearch.addEventListener("input", event => {
+  if (!event.isComposing) applyLessonSearch();
+});
+lessonSearch.addEventListener("compositionend", applyLessonSearch);
+lessonSearch.addEventListener("keydown", event => {
+  if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
+  event.preventDefault();
+  (lessonChoices.querySelector("button") || lessonSearch).focus();
+});
+lessonChoices.addEventListener("click", event => {
+  const button = event.target.closest("button[data-app-id]");
+  if (!button) return;
+  const id = button.dataset.appId;
+  const app = byId.get(id);
+  if (!app || draftLessonApps.includes(id)) return;
+  const index = [...lessonChoices.children].indexOf(button.closest("li"));
   draftLessonApps.push(id);
-  lessonEditorStatus.textContent = "";
   renderLessonOrder();
-  (lessonApp.disabled ? lessonOrder.lastElementChild.querySelector("button:enabled") : lessonApp).focus({ preventScroll: true });
+  lessonEditorStatus.textContent = `${app.title} 추가됨`;
+  const nextChoice = lessonChoices.children[index] || lessonChoices.lastElementChild;
+  (nextChoice?.querySelector("button") || lessonSearch).focus({ preventScroll: true });
 });
 lessonOrder.addEventListener("click", event => {
   const button = event.target.closest("button[data-lesson-action]");
@@ -407,7 +439,7 @@ lessonOrder.addEventListener("click", event => {
   lessonEditorStatus.textContent = "";
   renderLessonOrder();
   const row = lessonOrder.children[destination];
-  const target = row?.querySelector(`[data-lesson-action="${action}"]:enabled`) || row?.querySelector("button:enabled") || lessonApp;
+  const target = row?.querySelector(`[data-lesson-action="${action}"]:enabled`) || row?.querySelector("button:enabled") || lessonSearch;
   target.focus({ preventScroll: true });
 });
 lessonEditor.addEventListener("submit", event => {
@@ -420,7 +452,7 @@ lessonEditor.addEventListener("submit", event => {
   }
   if (!draftLessonApps.length) {
     lessonEditorStatus.textContent = "실행할 앱을 하나 이상 추가하세요.";
-    lessonApp.focus();
+    lessonSearch.focus();
     return;
   }
   const id = editingLesson?.id ?? crypto.randomUUID();
@@ -945,6 +977,30 @@ function relatedTopicSuggestions(query, filters) {
   }).slice(0, 2).map(topic => ({ label: topic + " 앱 보기", changes: { q: "", topic } }));
 }
 
+function oneEditApart(shorter, longer) {
+  if (shorter.length > longer.length) [shorter, longer] = [longer, shorter];
+  if (longer.length - shorter.length > 1) return false;
+  let index = 0;
+  while (index < shorter.length && shorter[index] === longer[index]) index++;
+  if (shorter.length === longer.length) {
+    return index < shorter.length && shorter.slice(index + 1) === longer.slice(index + 1);
+  }
+  return shorter.slice(index) === longer.slice(index + 1);
+}
+
+function similarSearchSuggestions(query, filters) {
+  const text = compact(query);
+  if (text.length < 4) return [];
+  const available = appIndex.filter(entry => matchesFilters(entry, filters));
+  const titles = available.filter(({ app }) => oneEditApart(text, compact(app.title))).map(({ app }) => app.title);
+  const situations = classroomSituations.filter(({ label, keywords, appIds }) =>
+    [label, ...keywords].some(term => oneEditApart(text, compact(term)))
+    && available.some(({ app }) => appIds.includes(app.id))
+  ).map(({ label }) => label);
+  return [...new Set([...titles, ...situations])].slice(0, 2)
+    .map(term => ({ label: `${term} 검색`, changes: { q: term } }));
+}
+
 function renderActiveFilters(active) {
   activeFilters.hidden = active.length === 0;
   activeFilters.replaceChildren(...active.map(({ param, label }, index) => {
@@ -1001,9 +1057,10 @@ function revealResults() {
 function showSearchRecovery(queryMatches, filters, active, query) {
   const suggestions = filterRecoverySuggestions(queryMatches, filters, active);
   if (!queryMatches.length && query) {
+    suggestions.push(...similarSearchSuggestions(query, filters));
     suggestions.push(...relatedTopicSuggestions(query, filters));
   }
-  if (!suggestions.length && query) suggestions.push({ label: "검색어만 지우기", changes: { q: "" } });
+  if (query && (!queryMatches.length || !suggestions.length)) suggestions.push({ label: "검색어만 지우기", changes: { q: "" } });
 
   emptyActions.replaceChildren(...suggestions.map(({ label, changes }) => {
     const button = document.createElement("button");
@@ -1050,7 +1107,7 @@ function update() {
     { key: "studentOnly", param: "student", label: "학생 링크" },
     { key: "savedOnly", param: "saved", label: "즐겨찾기" }
   ].filter(({ key }) => filters[key]);
-  const queryMatches = appIndex.filter(entry => matchesSearch(entry, words, query));
+  const queryMatches = searchApps(words);
   const shown = queryMatches.filter(entry => matchesFilters(entry, filters));
   catalogResults = shown.map(({ app }) => app);
   cards.replaceChildren(...catalogResults.map(makeCard));
@@ -1198,10 +1255,7 @@ window.addEventListener("storage", event => {
   favorites = readFavorites();
   pinnedApps = readPins();
   renderQuickApps();
-  if (lessonDialog.open) {
-    if (lessonEditor.hidden) renderLessonList();
-    else renderLessonChoices();
-  }
+  if (event.key === null && lessonDialog.open && lessonEditor.hidden) renderLessonList();
   update();
 });
 renderQuickApps();

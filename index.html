@@ -17,11 +17,11 @@
 <link rel="icon" href="./icons/favicon-32.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="엽떡스쿨">
-<link rel="stylesheet" href="./assets/styles.css?v=27">
+<link rel="stylesheet" href="./assets/styles.css?v=28">
 <script defer src="./ys-install.js"></script>
 <script defer src="./ys-qr.js"></script>
-<script defer src="./assets/catalog-data.js?v=7"></script>
-<script defer src="./assets/catalog.js?v=22"></script>
+<script defer src="./assets/catalog-data.js?v=8"></script>
+<script defer src="./assets/catalog.js?v=23"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -140,11 +140,10 @@
   </div>
   <div class="dialog-body">
     <div id="lesson-list-view">
-      <p id="lesson-empty" hidden></p>
+      <p id="lesson-empty" hidden>앱을 검색해 수업 순서대로 묶어보세요.</p>
       <div id="lesson-list" class="lesson-list"></div>
       <div class="detail-actions">
         <button class="primary" id="lesson-create" type="button">새 수업 묶음</button>
-        <a class="secondary" id="lesson-browse" href="#catalog" hidden>앱 찾아보기</a>
       </div>
       <p class="copy-state" id="lesson-list-status" role="status"></p>
     </div>
@@ -153,11 +152,13 @@
         <input id="lesson-name" type="text" maxlength="60" placeholder="예: 5학년 역사 복습" required>
       </label>
       <div class="lesson-picker">
-        <label class="lesson-field" for="lesson-app">즐겨찾기 앱
-          <select class="topic-select" id="lesson-app"></select>
+        <label class="lesson-field" for="lesson-search">추가할 앱 검색
+          <input id="lesson-search" type="search" maxlength="80" placeholder="앱 이름·수업 상황 (예: 발표 순번)" autocomplete="off" enterkeyhint="search">
         </label>
-        <button class="secondary" id="lesson-add" type="button">추가</button>
+        <p id="lesson-search-status" class="lesson-search-status" role="status"></p>
+        <ul id="lesson-choices" class="lesson-choices" aria-label="추가할 수 있는 앱"></ul>
       </div>
+      <h3 id="lesson-order-heading" class="lesson-order-heading" hidden>실행 순서</h3>
       <ol class="lesson-order" id="lesson-order" aria-label="실행 순서"></ol>
       <p class="copy-state" id="lesson-editor-status" role="status"></p>
       <div class="detail-actions lesson-editor-actions">

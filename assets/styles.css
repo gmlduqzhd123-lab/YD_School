@@ -237,9 +237,14 @@ body:has(dialog[open]) { overflow: hidden; }
 .lesson-app-title { font-weight: 750; overflow-wrap: anywhere; }
 .lesson-field { display: grid; gap: .35rem; min-width: 0; font-weight: 750; }
 .lesson-field input { width: 100%; min-width: 0; min-height: 44px; padding: .5rem .65rem; border: 1px solid #d8c8bb; border-radius: 8px; background: #fff; color: var(--ink); }
-.lesson-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: .45rem; margin-top: .8rem; }
-.lesson-picker select { appearance: auto; padding-inline-end: .5rem; text-overflow: ellipsis; }
-.lesson-picker button:disabled, .lesson-row button:disabled { opacity: .55; cursor: default; }
+.lesson-picker { margin-top: .8rem; }
+.lesson-search-status { margin: .3rem 0; color: var(--muted); font-size: .85rem; }
+.lesson-choices { max-height: 10.5rem; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
+.lesson-choices li { display: flex; justify-content: space-between; align-items: center; gap: .45rem; padding: .25rem .3rem; }
+.lesson-choices li + li { border-top: 1px solid var(--line); }
+.lesson-choices button { flex: none; }
+.lesson-order-heading { margin: .8rem 0 0; font-size: 1rem; }
+.lesson-row button:disabled { opacity: .55; cursor: default; }
 .lesson-editor-actions { margin-top: .75rem; }
 #missing-app { text-align: left; margin: .35rem 0 .7rem; }
 #missing-app .secondary { margin-top: .2rem; }

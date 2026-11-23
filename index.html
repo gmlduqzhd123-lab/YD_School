@@ -17,11 +17,11 @@
 <link rel="icon" href="./icons/favicon-32.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="엽떡스쿨">
-<link rel="stylesheet" href="./assets/styles.css?v=17">
+<link rel="stylesheet" href="./assets/styles.css?v=18">
 <script defer src="./ys-install.js"></script>
 <script defer src="./ys-qr.js"></script>
-<script defer src="./assets/catalog-data.js?v=4"></script>
-<script defer src="./assets/catalog.js?v=16"></script>
+<script defer src="./assets/catalog-data.js?v=5"></script>
+<script defer src="./assets/catalog.js?v=17"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -189,12 +189,18 @@
     <div class="detail-actions">
       <a class="primary" id="detail-link" target="_blank" rel="noopener noreferrer"></a>
       <button type="button" class="secondary" id="detail-share" aria-haspopup="dialog">공유하기</button>
+      <button type="button" class="secondary star" id="detail-favorite" aria-pressed="false">☆ 즐겨찾기</button>
     </div>
+    <button type="button" class="secondary detail-preview" id="detail-preview" aria-haspopup="dialog">
+      <img id="detail-thumbnail" alt="" width="128" height="72" decoding="async" hidden>
+      <span>화면 미리보기</span>
+    </button>
     <section id="detail-shortcuts" aria-labelledby="shortcut-title" hidden>
       <h3 id="shortcut-title">바로가기</h3>
       <div class="detail-actions" id="shortcut-links"></div>
     </section>
     <dl class="detail-terms">
+      <dt>이용 조건</dt><dd id="detail-requirements"></dd>
       <dt>이용 방법</dt><dd id="detail-access"></dd>
       <dt id="detail-steps-label" hidden>처음 쓰는 순서</dt>
       <dd id="detail-steps-block" hidden><ol class="detail-steps" id="detail-steps"></ol></dd>
@@ -213,6 +219,7 @@
       <h3 id="student-share-title">학생에게</h3>
       <p id="student-note"></p>
       <div class="detail-actions">
+        <a class="student-link" id="open-student" target="_blank" rel="noopener noreferrer">학생용 링크 열기</a>
         <button type="button" class="primary" id="send-student" hidden>학생용 링크 보내기</button>
         <button type="button" class="secondary" id="copy-student-guide">안내와 링크 복사</button>
         <button type="button" class="secondary" id="copy-student">학생용 링크 복사</button>
@@ -268,27 +275,12 @@
 </dialog>
 <template id="card-template">
   <article class="card">
-    <div class="card-heading">
-      <span class="card-preview" aria-hidden="true"></span>
-      <div>
-        <p class="meta"><span class="topic"></span><span class="creator"></span></p>
-        <h3></h3>
-      </div>
-      <button class="star" type="button" aria-pressed="false"></button>
-    </div>
+    <h3></h3>
     <p class="desc"></p>
-    <div class="guidance-tags" hidden></div>
-    <div class="card-foot">
-      <p class="link-notice" hidden></p>
-      <div class="card-access" hidden>
-        <a class="student-link" target="_blank" rel="noopener noreferrer" hidden>학생용 링크</a>
-        <p class="access" hidden></p>
-      </div>
-      <div class="card-actions">
-        <a class="primary" target="_blank" rel="noopener noreferrer"></a>
-        <button class="secondary card-detail" type="button" aria-haspopup="dialog">활용 보기</button>
-        <button class="secondary card-share" type="button" aria-haspopup="dialog">공유</button>
-      </div>
+    <div class="card-actions">
+      <a class="primary" target="_blank" rel="noopener noreferrer"></a>
+      <button class="secondary card-detail" type="button" aria-haspopup="dialog">활용 보기</button>
+      <button class="secondary card-share" type="button" aria-haspopup="dialog">공유</button>
     </div>
   </article>
 </template>

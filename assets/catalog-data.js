@@ -1586,6 +1586,7 @@ const thumbnails = {
   "my-home": "./assets/preview-my-home.webp"
 };
 const studentQRs = {
+  "sweat-expedition": "./assets/qr-sweat-expedition.png",
   "fire-safety": "./assets/qr-fire-safety.png",
   "math-survival": "./assets/qr-math-survival.png",
   "tidy-up": "./assets/qr-tidy-up.png",

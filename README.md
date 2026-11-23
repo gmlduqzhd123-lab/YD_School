@@ -6,9 +6,9 @@
 
 - `assets/catalog-data.js`에서 앱 이름, 주제, 이용 안내, 원본 주소를 수정합니다. 공유 링크에서 앱을 찾을 때 사용하는 `id`는 그대로 유지합니다.
 - 학생에게 보낼 수 있는 앱에는 `studentNote`를 추가합니다. 학생 전용 입장 주소가 있으면 해당 `shortcuts` 항목에 `student: true`를 지정합니다.
-- 앱 카드의 이용 조건은 `access`와 학생 바로가기의 `note`에서 가져옵니다. `classroomSituations`에서 수업 상황별 검색어와 해당 앱 `id`를 관리합니다.
+- 활용 보기의 이용 조건은 `access`와 학생 바로가기의 `note`에서 가져옵니다. `classroomSituations`에서 수업 상황별 검색어와 해당 앱 `id`를 관리합니다.
 - 미리보기 이미지와 학생 공유용 QR 코드는 `assets/`에 저장합니다. 학생 링크를 바꾸면 해당 QR 이미지도 교체합니다.
-- 앱 카드 썸네일은 `assets/preview-<앱 id>.webp`, 확대 화면은 `assets/previews-hd/<앱 id>.webp`를 사용합니다.
+- 활용 보기의 썸네일은 `assets/preview-<앱 id>.webp`, 확대 화면은 `assets/previews-hd/<앱 id>.webp`를 사용합니다.
 - 즐겨찾기, 고정 순서, 수업 묶음은 사용하는 브라우저에 저장됩니다.
 
 ## 미리보기와 배포

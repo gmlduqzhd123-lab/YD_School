@@ -19,6 +19,9 @@ const mobileSearch = matchMedia("(max-width: 580px), (pointer: coarse)");
 const reset = document.querySelector("#reset");
 const template = document.querySelector("#card-template");
 const detail = document.querySelector("#detail");
+const detailPreview = document.querySelector("#detail-preview");
+const detailThumbnail = document.querySelector("#detail-thumbnail");
+const detailFavorite = document.querySelector("#detail-favorite");
 const previewDialog = document.querySelector("#preview-dialog");
 const previewTitle = document.querySelector("#preview-title");
 const previewStage = document.querySelector("#preview-stage");
@@ -52,6 +55,7 @@ const sendStudent = document.querySelector("#send-student");
 const shareDialog = document.querySelector("#share-dialog");
 const shareStatuses = shareDialog.querySelectorAll(".copy-state");
 const studentShare = document.querySelector("#student-share");
+const openStudent = document.querySelector("#open-student");
 const studentQR = document.querySelector("#student-qr");
 const qrPanel = document.querySelector("#student-qr-panel");
 const quickApps = document.querySelector("#quick-apps");
@@ -176,7 +180,7 @@ function readPins() {
 
 function setStar(button, app) {
   const saved = favorites.has(app.id);
-  button.textContent = saved ? "★" : "☆";
+  button.textContent = saved ? "★ 즐겨찾기" : "☆ 즐겨찾기";
   button.setAttribute("aria-pressed", String(saved));
   button.setAttribute("aria-label", app.title + " 즐겨찾기");
   button.title = saved ? "즐겨찾기 해제" : "즐겨찾기 추가";
@@ -194,12 +198,8 @@ function updateFavorite(button, app) {
   } catch {
     message += " 현재 탭에서만 적용됩니다.";
   }
-  if (paramsNow().get("saved") === "1" && wasSaved) {
-    update();
-    favoriteFilter.focus();
-  } else {
-    setStar(button, app);
-  }
+  setStar(button, app);
+  if (paramsNow().get("saved") === "1" && wasSaved) update();
   renderQuickApps();
   favoriteStatus.textContent = message;
 }
@@ -278,7 +278,7 @@ function renderLessonList(openId = lessonList.querySelector("details[open]")?.da
   lessonEmpty.hidden = lessons.length > 0 && favorites.size > 0;
   lessonEmpty.textContent = favorites.size > 0
     ? "즐겨찾기한 앱을 골라 수업 순서대로 묶어보세요."
-    : "앱 카드의 별을 눌러 즐겨찾기에 추가하면 새 묶음을 만들 수 있어요.";
+    : "앱의 활용 보기에서 즐겨찾기에 추가하면 새 묶음을 만들 수 있어요.";
   lessonList.replaceChildren(...lessons.map(lesson => {
     const bundle = document.createElement("details");
     bundle.className = "lesson-bundle";
@@ -432,14 +432,14 @@ lessonEditor.addEventListener("submit", event => {
   closeLessonEditor(id, "수업 묶음을 저장했습니다.");
 });
 
-function configureLink(link, app) {
-  const label = app.install ? "Windows 설치 안내" : "앱 열기";
+function configureLink(link, app, label = app.install ? "Windows 설치 안내" : "앱 열기") {
+  const destination = app.install && label === "앱 열기" ? "Windows 설치 안내 새 탭" : "외부 사이트 새 탭";
   link.href = app.url;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = label;
-  link.setAttribute("aria-label", app.title + " " + label + ", 외부 사이트 새 탭");
-  link.title = "외부 사이트에서 열립니다";
+  link.setAttribute("aria-label", app.title + " " + label + ", " + destination);
+  link.title = app.install ? "Windows 설치 안내가 열립니다" : "외부 사이트에서 열립니다";
 }
 
 function accessLabels(app) {
@@ -451,70 +451,10 @@ function accessLabels(app) {
 
 function makeCard(app) {
   const card = template.content.firstElementChild.cloneNode(true);
-  const preview = card.querySelector(".card-preview");
-  preview.style.setProperty("--art-bg", app.palette[0]);
-  preview.style.setProperty("--art-ink", app.palette[1]);
-  preview.textContent = app.icon;
-  const thumbnail = thumbnails[app.id];
-  if (thumbnail) {
-    const trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "preview-trigger";
-    trigger.setAttribute("aria-haspopup", "dialog");
-    trigger.setAttribute("aria-label", app.title + " 미리보기 크게 보기");
-    trigger.addEventListener("click", () => showPreview(app, trigger));
-    const img = new Image();
-    img.alt = "";
-    img.width = 84;
-    img.height = 50;
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.addEventListener("error", () => {
-      preview.classList.remove("has-photo");
-      preview.textContent = app.icon;
-      trigger.replaceWith(preview);
-    }, { once: true });
-    preview.classList.add("has-photo");
-    preview.replaceChildren(img);
-    preview.replaceWith(trigger);
-    trigger.append(preview);
-    img.src = thumbnail;
-  }
-  card.querySelector(".topic").textContent = app.topics[0];
-  card.querySelector(".creator").textContent = app.creator;
   card.querySelector("h3").textContent = app.title;
   card.querySelector(".desc").textContent = app.desc;
-  const guidanceTags = card.querySelector(".guidance-tags");
-  if (app.tags?.length) {
-    guidanceTags.hidden = false;
-    for (const title of app.tags) {
-      const tag = document.createElement("span");
-      tag.className = "guidance-tag";
-      tag.textContent = title;
-      guidanceTags.append(tag);
-    }
-  }
-  const linkNotice = card.querySelector(".link-notice");
-  const linkResult = app.linkAudit?.result;
-  linkNotice.hidden = !["moved", "review"].includes(linkResult);
-  linkNotice.textContent = linkResult === "moved" ? "주소 변경" : "접속 확인 중";
-  const studentLink = studentURL(app);
-  const requirements = accessLabels(app);
-  const access = card.querySelector(".access");
-  const studentEntry = card.querySelector(".student-link");
-  card.querySelector(".card-access").hidden = !studentLink && requirements.length === 0;
-  access.hidden = requirements.length === 0;
-  access.textContent = requirements.join(" · ");
-  if (studentLink) {
-    studentEntry.hidden = false;
-    studentEntry.href = studentLink;
-    studentEntry.setAttribute("aria-label", app.title + " 학생용 링크, 새 탭");
-  }
-  configureLink(card.querySelector(".card-actions .primary"), app);
+  configureLink(card.querySelector(".card-actions .primary"), app, "앱 열기");
 
-  const star = card.querySelector(".star");
-  setStar(star, app);
-  star.addEventListener("click", () => updateFavorite(star, app));
   const opener = card.querySelector(".card-detail");
   opener.setAttribute("aria-label", app.title + " 활용 보기");
   opener.addEventListener("click", () => {
@@ -631,8 +571,9 @@ new ResizeObserver(() => {
 
 function showPreview(app, trigger) {
   previewOpener = trigger;
-  previewResults = catalogResults;
-  previewIndex = previewResults.indexOf(app);
+  const index = catalogResults.indexOf(app);
+  previewResults = index < 0 ? [app] : catalogResults;
+  previewIndex = Math.max(0, index);
   previewDialog.showModal();
   displayPreview();
 }
@@ -767,14 +708,20 @@ previewDialog.addEventListener("close", () => {
 });
 
 function displayDetail(app) {
+  setStar(detailFavorite, app);
   if (detailApp === app && detail.open) return;
   detailApp = app;
   document.querySelector("#detail-meta").textContent = app.creator + " · " + app.topics.join(" · ");
   document.querySelector("#detail-title").textContent = app.title;
   document.querySelector("#detail-desc").textContent = app.desc;
+  document.querySelector("#detail-requirements").textContent = accessLabels(app).join(" · ") || app.access;
   document.querySelector("#detail-access").textContent = app.note;
   document.querySelector("#detail-tip").textContent = app.tip;
   configureLink(document.querySelector("#detail-link"), app);
+  const thumbnail = thumbnails[app.id];
+  detailThumbnail.hidden = !thumbnail;
+  if (thumbnail) detailThumbnail.src = thumbnail;
+  else detailThumbnail.removeAttribute("src");
   const steps = app.steps || [];
   document.querySelector("#detail-steps-label").hidden = steps.length === 0;
   document.querySelector("#detail-steps-block").hidden = steps.length === 0;
@@ -794,7 +741,7 @@ function displayDetail(app) {
       ].filter(Boolean).join(" / ")
     : "접속 점검 기록 없음";
 
-  const shortcuts = app.shortcuts || [];
+  const shortcuts = app.shortcuts?.filter(shortcut => !shortcut.student) || [];
   document.querySelector("#detail-shortcuts").hidden = shortcuts.length === 0;
   document.querySelector("#shortcut-links").replaceChildren(...shortcuts.map(shortcut => {
     const link = document.createElement("a");
@@ -820,6 +767,13 @@ function displayDetail(app) {
 document.querySelector("#detail-share").addEventListener("click", () => {
   if (detailApp) openShare(detailApp);
 });
+detailThumbnail.addEventListener("error", () => { detailThumbnail.hidden = true; });
+detailPreview.addEventListener("click", () => {
+  if (detailApp) showPreview(detailApp, detailPreview);
+});
+detailFavorite.addEventListener("click", () => {
+  if (detailApp) updateFavorite(detailFavorite, detailApp);
+});
 
 function studentShortcut(app) {
   return app.shortcuts?.find(shortcut => shortcut.student);
@@ -837,6 +791,8 @@ function openShare(app) {
   document.querySelector("#share-app-name").textContent = app.title;
   document.querySelector("#student-note").textContent = app.studentNote || "";
   studentShare.hidden = !studentLink;
+  if (studentLink) openStudent.href = studentLink;
+  else openStudent.removeAttribute("href");
   document.querySelector("#original-share").hidden = app.url === studentLink;
   copyButton.hidden = !hosted;
   sendTeacher.hidden = !canSend({ url: shareURL(app) });
@@ -1082,7 +1038,7 @@ function update() {
   empty.hidden = shown.length > 0;
   if (shown.length === 0) {
     emptyMessage.textContent = savedOnly && favorites.size === 0
-      ? "아직 즐겨찾기한 앱이 없어요. 앱 카드의 별을 눌러 추가해 보세요."
+      ? "아직 즐겨찾기한 앱이 없어요. 활용 보기에서 즐겨찾기에 추가해 보세요."
       : "조건에 맞는 앱이 없어요.";
     showSearchRecovery(queryMatches, filters, active, q);
   } else {
@@ -1189,7 +1145,7 @@ detail.addEventListener("cancel", event => {
 detail.addEventListener("close", () => {
   if (detail.open) return;
   detailApp = null;
-  if (detailOpener?.isConnected) detailOpener.focus();
+  if (detailOpener) (detailOpener.isConnected ? detailOpener : favoriteFilter).focus();
   detailOpener = null;
 });
 function closeOnBackdrop(dialog, close) {

@@ -114,7 +114,8 @@ function compact(text) {
   return normalizedWords(text).join("");
 }
 
-const appIndex = apps.map(app => {
+const titleOrder = new Intl.Collator("ko", { numeric: true });
+const appIndex = [...apps].sort((a, b) => titleOrder.compare(a.title, b.title)).map(app => {
   const situations = classroomSituations
     .filter(situation => situation.appIds.includes(app.id))
     .flatMap(situation => [situation.label, ...situation.keywords]);
@@ -123,7 +124,6 @@ const appIndex = apps.map(app => {
     : [];
   return {
     app,
-    title: compact(app.title),
     fields: [
       app.title, app.creator, app.desc, app.access, ...app.topics, ...app.keys, ...(app.tags || []),
       ...accessLabels(app), ...situations, ...studentKeywords
@@ -131,13 +131,9 @@ const appIndex = apps.map(app => {
   };
 });
 
-function matchingPriority(entry, words, query) {
-  if (!query) return 0;
-  if (entry.title === query) return 4;
-  if (entry.title.startsWith(query)) return 3;
-  if (entry.title.includes(query)) return 2;
-  if (entry.fields.some(field => field.includes(query))) return 1;
-  return words.every(word => entry.fields.some(field => field.includes(word))) ? 0 : -1;
+function matchesSearch(entry, words, query) {
+  return !query || entry.fields.some(field => field.includes(query))
+    || words.every(word => entry.fields.some(field => field.includes(word)));
 }
 
 function paramsNow() {
@@ -1043,11 +1039,8 @@ function update() {
     { key: "studentOnly", param: "student", label: "학생 링크" },
     { key: "savedOnly", param: "saved", label: "즐겨찾기" }
   ].filter(({ key }) => filters[key]);
-  const queryMatches = appIndex
-    .map(entry => ({ app: entry.app, priority: matchingPriority(entry, words, query) }))
-    .filter(entry => entry.priority >= 0);
-  const shown = queryMatches.filter(entry => matchesFilters(entry, filters))
-    .sort((a, b) => b.priority - a.priority);
+  const queryMatches = appIndex.filter(entry => matchesSearch(entry, words, query));
+  const shown = queryMatches.filter(entry => matchesFilters(entry, filters));
   catalogResults = shown.map(({ app }) => app);
   cards.replaceChildren(...catalogResults.map(makeCard));
 

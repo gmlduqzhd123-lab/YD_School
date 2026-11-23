@@ -92,8 +92,9 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .card .card-favorite { flex: none; padding-inline: .55rem; white-space: nowrap; }
 .star[aria-pressed="true"] { background: #fff0cc; border-color: #edcea2; color: #7a4e12; }
 .card .desc { margin: 5px 0 10px; color: var(--muted); font-size: .89rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card .card-preview { justify-content: flex-start; gap: .65rem; margin-bottom: 8px; padding: 4px 8px; text-align: left; cursor: zoom-in; }
-.card-preview img { flex: none; width: min(88px, 25vw); height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: center top; border: 1px solid var(--line); border-radius: 5px; }
+.card .card-preview { align-self: center; margin-bottom: 8px; padding: 2px; cursor: zoom-in; }
+.card .card-preview:has(img[hidden]) { display: none; }
+.card-preview img { flex: none; width: min(88px, 25vw); height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: center top; border-radius: 5px; }
 .card-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: auto; }
 .student-link { display: inline-flex; align-items: center; min-height: 44px; padding: .3rem .65rem; border: 1px solid #9eb7a2; border-radius: 8px; background: #edf4ec; color: #285239; font-size: .86rem; font-weight: 800; }
 .student-link:hover { background: #e1eee1; text-decoration: underline; text-underline-offset: .18em; }
@@ -182,6 +183,7 @@ body:has(dialog[open]) { overflow: hidden; }
   .selection { margin-block: 3px 5px; }
   .grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .card { padding: 10px; }
+  .card-preview img { width: min(116px, 33vw); }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 .quick-apps { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 12px; margin: 2px 0 10px; }

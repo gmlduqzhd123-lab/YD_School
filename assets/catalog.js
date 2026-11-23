@@ -23,7 +23,9 @@ const detailPreview = document.querySelector("#detail-preview");
 const detailThumbnail = document.querySelector("#detail-thumbnail");
 const detailFavorite = document.querySelector("#detail-favorite");
 const previewDialog = document.querySelector("#preview-dialog");
+const previewBody = previewDialog.querySelector(".preview-body");
 const previewTitle = document.querySelector("#preview-title");
+const previewIntro = document.querySelector("#preview-intro");
 const previewStage = document.querySelector("#preview-stage");
 const previewCanvas = document.querySelector("#preview-canvas");
 const previewNavigation = document.querySelector("#preview-navigation");
@@ -31,7 +33,6 @@ const previewPrevious = document.querySelector("#preview-previous");
 const previewNext = document.querySelector("#preview-next");
 const previewPosition = document.querySelector("#preview-position");
 const previewStatus = document.querySelector("#preview-status");
-const previewZoom = document.querySelector("#preview-zoom");
 const previewLink = document.querySelector("#preview-link");
 const previewShare = document.querySelector("#preview-share");
 const previewHelp = document.querySelector("#preview-help");
@@ -513,11 +514,9 @@ function previewImagePoint(point) {
   };
 }
 
-function updatePreviewZoomControls() {
+function updatePreviewGestureHint() {
   const zoomed = previewScale > 1;
   previewStage.tabIndex = zoomed ? 0 : -1;
-  const label = previewScale >= 2 ? "화면에 맞추기" : "2배 확대";
-  if (previewZoom.textContent !== label) previewZoom.textContent = label;
   const hint = zoomed ? "한 손가락으로 이미지 이동" : previewResults.length > 1
     ? "좌우로 밀어 앱 이동 · 두 손가락 확대"
     : "두 손가락으로 확대·축소";
@@ -537,7 +536,7 @@ function setPreviewScale(value, point, imagePoint) {
   const height = box.height - 2 * previewStage.clientTop;
   const fitWidth = Math.min(width, height * previewImage.naturalWidth / previewImage.naturalHeight);
   previewImage.style.width = `${Math.floor(fitWidth * previewScale)}px`;
-  updatePreviewZoomControls();
+  updatePreviewGestureHint();
 
   if (!zoomed) {
     previewStage.scrollTo(0, 0);
@@ -559,7 +558,7 @@ function previewTouchPair() {
 }
 
 previewStage.addEventListener("pointerdown", event => {
-  if (event.pointerType !== "touch" || previewZoom.disabled || previewPointers.size >= 2) return;
+  if (event.pointerType !== "touch" || previewCanvas.hidden || previewPointers.size >= 2) return;
   previewStage.setPointerCapture(event.pointerId);
   const point = { x: event.clientX, y: event.clientY };
   previewPointers.set(event.pointerId, point);
@@ -648,6 +647,8 @@ function displayPreview() {
   if (active === previewNext && previewNext.disabled) previewPrevious.focus({ preventScroll: true });
 
   previewTitle.textContent = app.title + " 미리보기";
+  previewIntro.textContent = app.desc;
+  previewBody.scrollTop = 0;
   configureLink(previewLink, app);
   previewShare.onclick = () => {
     previewShare.focus({ preventScroll: true });
@@ -661,8 +662,7 @@ function displayPreview() {
   previewPinch = null;
   previewSwipe = null;
   previewScale = 1;
-  updatePreviewZoomControls();
-  previewZoom.disabled = true;
+  updatePreviewGestureHint();
 
   const source = previewSource(app);
   const neighbors = [previewResults[previewIndex - 1], previewResults[previewIndex + 1]]
@@ -680,7 +680,6 @@ function displayPreview() {
     image.onerror = null;
     previewCanvas.hidden = false;
     setPreviewScale(1);
-    previewZoom.disabled = false;
     previewStatus.hidden = Boolean(fallback);
   };
   image.onerror = () => {
@@ -721,7 +720,6 @@ previewDialog.addEventListener("keydown", event => {
   event.preventDefault();
   movePreview(event.key === "ArrowLeft" ? -1 : 1);
 });
-previewZoom.addEventListener("click", () => setPreviewScale(previewScale >= 2 ? 1 : 2));
 document.querySelector("#preview-close").addEventListener("click", () => previewDialog.close());
 previewDialog.addEventListener("close", () => {
   if (previewDialog.open) return;

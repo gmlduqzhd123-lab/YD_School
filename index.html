@@ -17,11 +17,11 @@
 <link rel="icon" href="./icons/favicon-32.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="엽떡스쿨">
-<link rel="stylesheet" href="./assets/styles.css?v=25">
+<link rel="stylesheet" href="./assets/styles.css?v=26">
 <script defer src="./ys-install.js"></script>
 <script defer src="./ys-qr.js"></script>
 <script defer src="./assets/catalog-data.js?v=7"></script>
-<script defer src="./assets/catalog.js?v=21"></script>
+<script defer src="./assets/catalog.js?v=22"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -246,12 +246,13 @@
     <textarea id="copy-value" class="copy-value" aria-label="복사할 내용" rows="3" readonly hidden></textarea>
   </div>
 </dialog>
-<dialog id="preview-dialog" class="app-dialog" aria-labelledby="preview-title">
+<dialog id="preview-dialog" class="app-dialog" aria-labelledby="preview-title" aria-describedby="preview-intro">
   <div class="dialog-header">
     <h2 id="preview-title"></h2>
     <button type="button" class="close" id="preview-close" aria-label="미리보기 닫기" autofocus>×</button>
   </div>
   <div class="dialog-body preview-body">
+    <p id="preview-intro" class="preview-intro"></p>
     <div id="preview-navigation" class="preview-navigation" role="group" aria-label="미리보기 앱 이동" hidden>
       <button type="button" class="secondary" id="preview-previous">이전 앱</button>
       <p id="preview-position" role="status"></p>
@@ -266,7 +267,6 @@
     <div class="preview-tools">
       <p class="preview-help" id="preview-help"></p>
       <div class="detail-actions">
-        <button type="button" class="secondary" id="preview-zoom" aria-controls="preview-stage" disabled>2배 확대</button>
         <button type="button" class="secondary" id="preview-share" aria-haspopup="dialog">공유</button>
         <a class="primary" id="preview-link" target="_blank" rel="noopener noreferrer"></a>
       </div>

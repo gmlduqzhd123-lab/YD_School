@@ -92,7 +92,7 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .card h3.long-title { font-size: clamp(.875rem, calc((100cqw - 3.25rem) / 12.5), 1.07rem); }
 .secondary.star { flex: none; width: 44px; padding: 0; font-size: 1.2rem; line-height: 1; }
 .star[aria-pressed="true"] { background: #fff0cc; border-color: #edcea2; color: #7a4e12; }
-.card .desc { margin: 5px 0 10px; color: var(--muted); font-size: .89rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .desc { margin: 5px 0 10px; color: var(--muted); font-size: .89rem; overflow-wrap: anywhere; }
 .card .card-preview { align-self: center; margin-bottom: 8px; padding: 2px; cursor: zoom-in; }
 .card .card-preview:has(img[hidden]) { display: none; }
 .card-preview picture { display: contents; }
@@ -127,11 +127,12 @@ body:has(dialog[open]) { overflow: hidden; }
 #preview-dialog[open] { display: flex; flex-direction: column; }
 #preview-dialog .dialog-header { flex: none; align-items: center; }
 #preview-dialog button, #preview-link { touch-action: manipulation; }
-.preview-body { display: flex; flex-direction: column; min-height: 0; }
+.preview-body { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+.preview-intro { flex: none; margin: 0 0 .65rem; color: var(--muted); font-size: .94rem; overflow-wrap: anywhere; }
 .preview-navigation { flex: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; }
 .preview-navigation p { margin: 0; color: var(--muted); font-size: .85rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .preview-navigation button:disabled { opacity: .52; cursor: default; }
-.preview-view { position: relative; display: flex; flex-direction: column; min-height: 0; }
+.preview-view { position: relative; display: flex; flex-direction: column; min-height: 7rem; }
 .preview-stage { height: min(34rem, 78vw, max(8rem, calc(100vh - 10rem))); height: min(34rem, 78vw, max(8rem, calc(100dvh - 10rem))); min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: none; border: 1px solid var(--line); border-radius: 8px; background: #efe6db; }
 .preview-canvas { display: grid; place-items: center; width: max-content; height: max-content; min-width: 100%; min-height: 100%; }
 .preview-stage img { display: block; height: auto; user-select: none; -webkit-user-select: none; }
@@ -142,7 +143,7 @@ body:has(dialog[open]) { overflow: hidden; }
 .preview-tools .detail-actions { justify-content: flex-end; }
 .preview-help { display: none; margin: 0 auto 0 0; color: var(--muted); font-size: .85rem; }
 @media (any-pointer: coarse) { .preview-help { display: block; } }
-#preview-zoom, #preview-share { -webkit-tap-highlight-color: transparent; }
+#preview-share { -webkit-tap-highlight-color: transparent; }
 #detail-desc { margin: 0 0 .7rem; }
 .detail-preview { gap: .55rem; max-width: 100%; margin-top: .75rem; text-align: left; cursor: zoom-in; }
 .detail-preview img { width: min(128px, 38vw); height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: center top; border: 1px solid var(--line); border-radius: 5px; }

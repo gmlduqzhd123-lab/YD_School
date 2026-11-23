@@ -95,6 +95,10 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .card .card-preview { align-self: center; margin-bottom: 8px; padding: 2px; cursor: zoom-in; }
 .card .card-preview:has(img[hidden]) { display: none; }
 .card-preview img { flex: none; width: 116px; height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: center top; border-radius: 5px; }
+@media (min-width: 581px) and (pointer: fine) {
+  .card .card-preview { width: 66%; }
+  .card-preview img { width: 100%; }
+}
 .card-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: auto; }
 .student-link { display: inline-flex; align-items: center; min-height: 44px; padding: .3rem .65rem; border: 1px solid #9eb7a2; border-radius: 8px; background: #edf4ec; color: #285239; font-size: .86rem; font-weight: 800; }
 .student-link:hover { background: #e1eee1; text-decoration: underline; text-underline-offset: .18em; }

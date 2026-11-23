@@ -176,7 +176,7 @@ function readPins() {
 
 function setStar(button, app) {
   const saved = favorites.has(app.id);
-  button.textContent = saved ? "★ 즐겨찾기" : "☆ 즐겨찾기";
+  button.textContent = saved ? "★" : "☆";
   button.setAttribute("aria-pressed", String(saved));
   button.setAttribute("aria-label", app.title + " 즐겨찾기");
   button.title = saved ? "즐겨찾기 해제" : "즐겨찾기 추가";
@@ -460,14 +460,20 @@ function setThumbnail(image, app, desktopSource = null) {
     }
     image.hidden = true;
   };
-  if (desktopSource && src) desktopSource.srcset = `./assets/previews-desktop/${app.id}.webp`;
+  if (desktopSource && src) {
+    const revision = desktopPreviewRevisions[app.id];
+    desktopSource.srcset = `./assets/previews-desktop/${app.id}.webp${revision ? `?v=${revision}` : ""}`;
+  }
   if (src) image.src = src;
   else image.removeAttribute("src");
 }
 
 function makeCard(app) {
   const card = template.content.firstElementChild.cloneNode(true);
-  card.querySelector("h3").textContent = app.title;
+  const heading = card.querySelector("h3");
+  heading.textContent = app.title;
+  heading.title = app.title;
+  heading.classList.toggle("long-title", app.title.length >= 14);
   card.querySelector(".desc").textContent = app.desc;
   configureLink(card.querySelector(".card-actions .primary"), app, "앱 열기");
 

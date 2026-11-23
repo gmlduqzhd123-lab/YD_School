@@ -87,9 +87,10 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .card { display: flex; flex-direction: column; min-width: 0; border: 1px solid #e1d4c5; border-radius: 12px; padding: 12px; background: var(--paper); }
 .card:hover, .card:focus-within { border-color: #c3a48f; }
 .meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 6px; margin: 0 0 3px; color: #65564d; font-size: .77rem; font-weight: 750; }
-.card-title { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.card h3 { margin: 0; line-height: 1.35; letter-spacing: -.04em; font-size: 1.07rem; overflow-wrap: anywhere; }
-.card .card-favorite { flex: none; padding-inline: .55rem; white-space: nowrap; }
+.card-title { display: flex; align-items: center; justify-content: space-between; gap: .5rem; container-type: inline-size; }
+.card h3 { min-width: 0; margin: 0; line-height: 1.35; letter-spacing: -.04em; font-size: 1.07rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card h3.long-title { font-size: clamp(.875rem, calc((100cqw - 3.25rem) / 12.5), 1.07rem); }
+.secondary.star { flex: none; width: 44px; padding: 0; font-size: 1.2rem; line-height: 1; }
 .star[aria-pressed="true"] { background: #fff0cc; border-color: #edcea2; color: #7a4e12; }
 .card .desc { margin: 5px 0 10px; color: var(--muted); font-size: .89rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .card-preview { align-self: center; margin-bottom: 8px; padding: 2px; cursor: zoom-in; }

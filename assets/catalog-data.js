@@ -1519,6 +1519,19 @@ const thumbnails = {
   "ysschool": "./assets/preview-ysschool.webp",
   "volleyball": "./assets/preview-volleyball.webp"
 };
+const desktopPreviewRevisions = {
+  "acaraca": 2,
+  "class-acave": 2,
+  "destiny": 2,
+  "everything-class": 2,
+  "heart-connecting": 2,
+  "nicehelperys": 2,
+  "rollin-thunder": 2,
+  "runrun": 2,
+  "teacher-game": 2,
+  "translation": 2,
+  "writing-room": 2
+};
 const studentQRs = {
   "sweat-expedition": "./assets/qr-sweat-expedition.png",
   "fire-safety": "./assets/qr-fire-safety.png",

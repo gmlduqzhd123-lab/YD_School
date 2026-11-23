@@ -1578,6 +1578,35 @@ const searchEquivalentPhrases = [
   ["가입 없이", "로그인 없이", "회원가입 없이", "계정 없이", "무가입", "무로그인"]
 ];
 
+const usageConditions = [
+  {
+    key: "account-free",
+    label: "가입 없이 시작",
+    apps: {
+      "escape-class": "연습 모드 가입 없이 시작",
+      "tidy-up": "가입 없이 시작 · 이름이나 별명은 기기에 저장",
+      "vibe-for-u": "학생 모드 가입 없이 시작",
+      "math-survival": "가입 없이 시작",
+      "history": "새 탐험은 가입 없이 시작",
+      "code-cart": "가입 없이 시작",
+      "fire-safety": "가입 없이 시작"
+    }
+  },
+  {
+    key: "teacher-setup",
+    label: "교사 준비 필요",
+    apps: {
+      "sweat-expedition": "모둠 비밀번호 필요",
+      "rollin-thunder": "교사 로그인"
+    }
+  },
+  {
+    key: "group-device",
+    label: "모둠당 기기 한 대",
+    apps: { "escape-class": "모둠당 기기 1대" }
+  }
+];
+
 const relatedTopicKeywords = {
   체육: ["준비운동", "스트레칭"],
   사회: ["역사", "유물", "문화재"],

@@ -2,7 +2,10 @@ const availableTopics = ["수학", "국어", "사회", "미술", "체육", "음�
 const topics = availableTopics.filter(topic => apps.some(app => app.topics.includes(topic)));
 const creators = ["엽쌤스쿨", "찰떡쌤"];
 const byId = new Map(apps.map(app => [app.id, app]));
-const clearFilters = { creator: "", topic: "", saved: "", student: "" };
+const clearFilters = {
+  creator: "", topic: "", saved: "", student: "",
+  ...Object.fromEntries(usageConditions.map(({ key }) => [key, ""]))
+};
 const favoriteKey = "yeoptteok-school-favorites";
 const lessonPrefix = "yeoptteok-school-lesson:";
 const hosted = location.protocol === "https:" || location.protocol === "http:";
@@ -42,6 +45,7 @@ const topicSelect = document.querySelector("#topics");
 const creatorFilters = document.querySelector("#creators");
 const filterToggle = document.querySelector("#filter-toggle");
 const filterCount = document.querySelector("#filter-count");
+const usageFilterOptions = document.querySelector("#usage-filter-options");
 const studentFilter = document.querySelector("#student-filter");
 const situationSearch = document.querySelector("#situation-search");
 const favoriteFilter = document.querySelector("#favorite-filter");
@@ -480,6 +484,9 @@ function accessLabels(app) {
   const labels = app.access.split(" · ").filter(label => label !== "웹앱");
   const studentCondition = studentShortcut(app)?.note;
   if (studentCondition) labels.push(studentCondition);
+  for (const condition of usageConditions) {
+    if (Object.hasOwn(condition.apps, app.id)) labels.push(condition.apps[app.id]);
+  }
   return [...new Set(labels)];
 }
 
@@ -964,7 +971,8 @@ function matchesFilters(entry, filters) {
   return (!filters.topic || app.topics.includes(filters.topic))
     && (!filters.creator || app.creator === filters.creator)
     && (!filters.studentOnly || Boolean(studentURL(app)))
-    && (!filters.savedOnly || favorites.has(app.id));
+    && (!filters.savedOnly || favorites.has(app.id))
+    && usageConditions.every(({ key, apps }) => !filters[key] || Object.hasOwn(apps, app.id));
 }
 
 function relatedTopicSuggestions(query, filters) {
@@ -1083,7 +1091,8 @@ function update() {
   const creator = creators.includes(params.get("creator")) ? params.get("creator") : "";
   const savedOnly = params.get("saved") === "1";
   const studentOnly = params.get("student") === "1";
-  const filterTotal = Number(Boolean(creator)) + Number(Boolean(topic));
+  const usageFilters = Object.fromEntries(usageConditions.map(({ key }) => [key, params.get(key) === "1"]));
+  const filterTotal = Number(Boolean(creator)) + Number(Boolean(topic)) + Object.values(usageFilters).filter(Boolean).length;
   if (search.value !== q) search.value = q;
   clear.hidden = q.length === 0;
   catalog.classList.toggle("is-filtering", Boolean(q.trim() || filterTotal || studentOnly));
@@ -1094,16 +1103,20 @@ function update() {
   for (const button of creatorFilters.children) {
     button.setAttribute("aria-pressed", String(button.dataset.value === creator));
   }
+  for (const button of usageFilterOptions.children) {
+    button.setAttribute("aria-pressed", String(usageFilters[button.dataset.key]));
+  }
 
   const words = normalizedWords(q);
   const query = words.join("");
   for (const button of situationSearch.children) {
     button.setAttribute("aria-pressed", String(button.dataset.query === query));
   }
-  const filters = { topic, creator, savedOnly, studentOnly };
+  const filters = { topic, creator, savedOnly, studentOnly, ...usageFilters };
   const active = [
     { key: "creator", param: "creator", label: creator },
     { key: "topic", param: "topic", label: topic },
+    ...usageConditions.map(({ key, label }) => ({ key, param: key, label })),
     { key: "studentOnly", param: "student", label: "학생 링크" },
     { key: "savedOnly", param: "saved", label: "즐겨찾기" }
   ].filter(({ key }) => filters[key]);
@@ -1114,7 +1127,7 @@ function update() {
 
   results.textContent = `앱 ${shown.length}개`;
   renderActiveFilters(active);
-  reset.hidden = !q && !topic && !creator && !savedOnly && !studentOnly;
+  reset.hidden = !q && !active.length;
   empty.hidden = shown.length > 0;
   if (shown.length === 0) {
     emptyMessage.textContent = savedOnly && favorites.size === 0
@@ -1150,6 +1163,19 @@ for (const creator of ["", ...creators]) {
 }
 topicSelect.add(new Option("모든 주제", ""));
 for (const topic of topics) topicSelect.add(new Option(topic, topic));
+
+for (const { key, label } of usageConditions) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "filter";
+  button.dataset.key = key;
+  button.textContent = label;
+  button.addEventListener("click", () => {
+    setParams({ [key]: paramsNow().get(key) === "1" ? "" : "1" });
+    update();
+  });
+  usageFilterOptions.append(button);
+}
 
 for (const { label } of classroomSituations.filter(situation => situation.quickSearch)) {
   const button = document.createElement("button");

@@ -1202,6 +1202,9 @@ function closeOnBackdrop(dialog, close) {
 
 closeOnBackdrop(detail, closeAppDetail);
 closeOnBackdrop(previewDialog, () => previewDialog.close());
+const developerDialog = document.querySelector("#developer-dialog");
+document.querySelector("#developer-open").addEventListener("click", () => developerDialog.showModal());
+closeOnBackdrop(developerDialog, () => developerDialog.close());
 window.addEventListener("popstate", () => {
   if (shareDialog.open) shareDialog.close();
   if (previewDialog.open) previewDialog.close();

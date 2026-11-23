@@ -41,6 +41,7 @@ button { cursor: pointer; }
 h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; letter-spacing: -.055em; }
 .catalog-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
 .catalog-head h2 { flex: none; padding-block: .4rem; }
+.catalog-title-row { display: flex; flex: none; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .catalog-search { width: min(650px, 100%); }
 .search { display: flex; width: 100%; min-height: 46px; align-items: center; gap: 11px; padding: 0 5px 0 13px; border: 1px solid #d8c8bb; border-radius: 9px; background: var(--paper); }
 .search:focus-within { outline: 3px solid var(--focus); outline-offset: 1px; }
@@ -214,6 +215,25 @@ body:has(dialog[open]) { overflow: hidden; }
 .quick-order label { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: .8rem; font-weight: 700; }
 .quick-order select { min-width: 0; width: 100%; }
 #quick-status:empty { display: none; }
+.lesson-list:not(:empty) { display: grid; gap: .5rem; margin-bottom: .8rem; }
+.lesson-bundle { border: 1px solid var(--line); border-radius: 9px; }
+.lesson-bundle summary { min-height: 44px; padding: .6rem .75rem; font-weight: 800; cursor: pointer; overflow-wrap: anywhere; }
+.lesson-bundle summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.lesson-count { margin-inline-start: .45rem; color: var(--muted); font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.lesson-bundle-body { padding: 0 .75rem .75rem; }
+.lesson-order { margin: .6rem 0; padding-inline-start: 1.65rem; }
+.lesson-order li + li { border-top: 1px solid var(--line); }
+.lesson-order li::marker { color: var(--muted); font-weight: 800; }
+.lesson-order a { display: flex; align-items: center; min-height: 44px; padding-block: .3rem; color: var(--brick-dark); font-weight: 750; overflow-wrap: anywhere; }
+.lesson-order a:hover { text-decoration: underline; }
+.lesson-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; padding-block: .35rem; }
+.lesson-app-title { font-weight: 750; overflow-wrap: anywhere; }
+.lesson-field { display: grid; gap: .35rem; min-width: 0; font-weight: 750; }
+.lesson-field input { width: 100%; min-width: 0; min-height: 44px; padding: .5rem .65rem; border: 1px solid #d8c8bb; border-radius: 8px; background: #fff; color: var(--ink); }
+.lesson-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: .45rem; margin-top: .8rem; }
+.lesson-picker select { appearance: auto; padding-inline-end: .5rem; text-overflow: ellipsis; }
+.lesson-picker button:disabled, .lesson-row button:disabled { opacity: .55; cursor: default; }
+.lesson-editor-actions { margin-top: .75rem; }
 #missing-app { text-align: left; margin: .35rem 0 .7rem; }
 #missing-app .secondary { margin-top: .2rem; }
 #detail-shortcuts { margin-top: .8rem; }

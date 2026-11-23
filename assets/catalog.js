@@ -4,6 +4,7 @@ const creators = ["엽쌤스쿨", "찰떡쌤"];
 const byId = new Map(apps.map(app => [app.id, app]));
 const clearFilters = { creator: "", topic: "", saved: "", student: "" };
 const favoriteKey = "yeoptteok-school-favorites";
+const lessonPrefix = "yeoptteok-school-lesson:";
 const hosted = location.protocol === "https:" || location.protocol === "http:";
 
 const search = document.querySelector("#search");
@@ -66,6 +67,20 @@ const quickDialog = document.querySelector("#quick-dialog");
 const quickForm = document.querySelector("#quick-form");
 const quickSlots = [...quickForm.querySelectorAll("select")];
 const quickStatus = document.querySelector("#quick-status");
+const lessonDialog = document.querySelector("#lesson-bundles-dialog");
+const lessonListView = document.querySelector("#lesson-list-view");
+const lessonList = document.querySelector("#lesson-list");
+const lessonEmpty = document.querySelector("#lesson-empty");
+const lessonCreate = document.querySelector("#lesson-create");
+const lessonBrowse = document.querySelector("#lesson-browse");
+const lessonListStatus = document.querySelector("#lesson-list-status");
+const lessonEditor = document.querySelector("#lesson-editor");
+const lessonName = document.querySelector("#lesson-name");
+const lessonApp = document.querySelector("#lesson-app");
+const lessonAdd = document.querySelector("#lesson-add");
+const lessonOrder = document.querySelector("#lesson-order");
+const lessonEditorStatus = document.querySelector("#lesson-editor-status");
+const lessonRowTemplate = document.querySelector("#lesson-row-template");
 const missingApp = document.querySelector("#missing-app");
 const copyValue = document.querySelector("#copy-value");
 
@@ -84,6 +99,8 @@ let sharedApp = null;
 let shareRequest = 0;
 let favorites = readFavorites();
 let pinnedApps = readPins();
+let editingLesson = null;
+let draftLessonApps = [];
 
 function normalizedWords(text) {
   return text.normalize("NFKC").toLocaleLowerCase("ko").match(/[\p{L}\p{N}]+/gu) ?? [];
@@ -228,6 +245,191 @@ quickForm.addEventListener("submit", event => {
   }
   renderQuickApps();
   quickDialog.close();
+});
+
+function readLessonBundle(key) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(key));
+    if (!saved || typeof saved.name !== "string" || !saved.name.trim() || !Array.isArray(saved.appIds)) return null;
+    return {
+      id: key.slice(lessonPrefix.length),
+      name: saved.name,
+      appIds: [...new Set(saved.appIds)].filter(id => byId.has(id)),
+      createdAt: Number.isFinite(saved.createdAt) ? saved.createdAt : 0
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readLessonBundles() {
+  try {
+    return Object.keys(localStorage).filter(key => key.startsWith(lessonPrefix))
+      .map(readLessonBundle).filter(Boolean).sort((a, b) => b.createdAt - a.createdAt);
+  } catch {
+    return [];
+  }
+}
+
+function renderLessonList(openId = lessonList.querySelector("details[open]")?.dataset.id) {
+  const lessons = readLessonBundles();
+  lessonCreate.hidden = favorites.size === 0;
+  lessonBrowse.hidden = favorites.size > 0;
+  lessonEmpty.hidden = lessons.length > 0 && favorites.size > 0;
+  lessonEmpty.textContent = favorites.size > 0
+    ? "즐겨찾기한 앱을 골라 수업 순서대로 묶어보세요."
+    : "앱 카드의 별을 눌러 즐겨찾기에 추가하면 새 묶음을 만들 수 있어요.";
+  lessonList.replaceChildren(...lessons.map(lesson => {
+    const bundle = document.createElement("details");
+    bundle.className = "lesson-bundle";
+    bundle.dataset.id = lesson.id;
+    bundle.open = lesson.id === (openId ?? lessons[0]?.id);
+    const summary = document.createElement("summary");
+    summary.append(lesson.name);
+    const count = document.createElement("span");
+    count.className = "lesson-count";
+    count.textContent = `앱 ${lesson.appIds.length}개`;
+    summary.append(" ", count);
+
+    const body = document.createElement("div");
+    body.className = "lesson-bundle-body";
+    const order = document.createElement("ol");
+    order.className = "lesson-order";
+    order.setAttribute("aria-label", "실행 순서");
+    for (const id of lesson.appIds) {
+      const app = byId.get(id);
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      configureLink(link, app);
+      link.textContent = app.install ? `${app.title} · 설치 안내` : app.title;
+      item.append(link);
+      order.append(item);
+    }
+    if (lesson.appIds.length) body.append(order);
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "secondary";
+    edit.textContent = "편집";
+    edit.setAttribute("aria-label", `${lesson.name} 편집`);
+    edit.addEventListener("click", () => openLessonEditor(lesson));
+    body.append(edit);
+    bundle.append(summary, body);
+    return bundle;
+  }));
+}
+
+function renderLessonChoices() {
+  const selected = lessonApp.value;
+  const choices = [...favorites].filter(id => !draftLessonApps.includes(id)).map(id => byId.get(id))
+    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
+  lessonApp.replaceChildren(new Option(choices.length ? "앱 선택" : "추가할 즐겨찾기 앱 없음", ""),
+    ...choices.map(app => new Option(app.title, app.id)));
+  lessonApp.disabled = choices.length === 0;
+  lessonApp.value = choices.some(app => app.id === selected) ? selected : "";
+  lessonAdd.disabled = !lessonApp.value;
+}
+
+function renderLessonOrder() {
+  renderLessonChoices();
+  lessonOrder.replaceChildren(...draftLessonApps.map((id, index) => {
+    const row = lessonRowTemplate.content.firstElementChild.cloneNode(true);
+    const title = byId.get(id).title;
+    row.dataset.appId = id;
+    row.querySelector(".lesson-app-title").textContent = title;
+    for (const button of row.querySelectorAll("button")) {
+      button.setAttribute("aria-label", `${title} ${button.textContent}`);
+    }
+    row.querySelector('[data-lesson-action="up"]').disabled = index === 0;
+    row.querySelector('[data-lesson-action="down"]').disabled = index === draftLessonApps.length - 1;
+    return row;
+  }));
+}
+
+function openLessonEditor(lesson = null) {
+  editingLesson = lesson;
+  draftLessonApps = lesson ? [...lesson.appIds] : [];
+  lessonName.value = lesson?.name ?? "";
+  lessonEditorStatus.textContent = "";
+  lessonListView.hidden = true;
+  lessonEditor.hidden = false;
+  lessonApp.value = "";
+  renderLessonOrder();
+  lessonDialog.scrollTop = 0;
+  lessonName.focus();
+}
+
+function closeLessonEditor(openId, message = "") {
+  lessonEditor.hidden = true;
+  lessonListView.hidden = false;
+  renderLessonList(openId);
+  lessonListStatus.textContent = message;
+  lessonDialog.scrollTop = 0;
+  const target = lessonList.querySelector("details[open] summary") || (favorites.size ? lessonCreate : lessonBrowse);
+  target.focus({ preventScroll: true });
+}
+
+document.querySelector("#lesson-bundles-open").addEventListener("click", () => {
+  lessonEditor.hidden = true;
+  lessonListView.hidden = false;
+  lessonListStatus.textContent = "";
+  renderLessonList();
+  lessonDialog.showModal();
+  lessonDialog.scrollTop = 0;
+});
+document.querySelector("#lesson-bundles-close").addEventListener("click", () => lessonDialog.close());
+lessonBrowse.addEventListener("click", () => lessonDialog.close());
+lessonCreate.addEventListener("click", () => openLessonEditor());
+document.querySelector("#lesson-cancel").addEventListener("click", () => closeLessonEditor(editingLesson?.id));
+lessonApp.addEventListener("change", () => { lessonAdd.disabled = !lessonApp.value; });
+lessonAdd.addEventListener("click", () => {
+  const id = lessonApp.value;
+  if (!favorites.has(id) || draftLessonApps.includes(id)) return;
+  draftLessonApps.push(id);
+  lessonEditorStatus.textContent = "";
+  renderLessonOrder();
+  (lessonApp.disabled ? lessonOrder.lastElementChild.querySelector("button:enabled") : lessonApp).focus({ preventScroll: true });
+});
+lessonOrder.addEventListener("click", event => {
+  const button = event.target.closest("button[data-lesson-action]");
+  if (!button || button.disabled) return;
+  const action = button.dataset.lessonAction;
+  const index = draftLessonApps.indexOf(button.closest("li").dataset.appId);
+  let destination = index;
+  if (action === "remove") {
+    draftLessonApps.splice(index, 1);
+    destination = Math.min(index, draftLessonApps.length - 1);
+  } else {
+    destination += action === "up" ? -1 : 1;
+    [draftLessonApps[index], draftLessonApps[destination]] = [draftLessonApps[destination], draftLessonApps[index]];
+  }
+  lessonEditorStatus.textContent = "";
+  renderLessonOrder();
+  const row = lessonOrder.children[destination];
+  const target = row?.querySelector(`[data-lesson-action="${action}"]:enabled`) || row?.querySelector("button:enabled") || lessonApp;
+  target.focus({ preventScroll: true });
+});
+lessonEditor.addEventListener("submit", event => {
+  event.preventDefault();
+  const name = lessonName.value.trim();
+  if (!name) {
+    lessonEditorStatus.textContent = "묶음 이름을 입력하세요.";
+    lessonName.focus();
+    return;
+  }
+  if (!draftLessonApps.length) {
+    lessonEditorStatus.textContent = "실행할 앱을 하나 이상 추가하세요.";
+    lessonApp.focus();
+    return;
+  }
+  const id = editingLesson?.id ?? crypto.randomUUID();
+  const createdAt = editingLesson?.createdAt ?? Date.now();
+  try {
+    localStorage.setItem(lessonPrefix + id, JSON.stringify({ name, appIds: draftLessonApps, createdAt }));
+  } catch {
+    lessonEditorStatus.textContent = "브라우저 저장 공간을 사용할 수 없어 묶음을 저장하지 못했어요.";
+    return;
+  }
+  closeLessonEditor(id, "수업 묶음을 저장했습니다.");
 });
 
 function configureLink(link, app) {
@@ -1006,10 +1208,18 @@ window.addEventListener("popstate", () => {
   update();
 });
 window.addEventListener("storage", event => {
+  if (event.key?.startsWith(lessonPrefix)) {
+    if (lessonDialog.open && lessonEditor.hidden) renderLessonList();
+    return;
+  }
   if (event.key !== favoriteKey && event.key !== pinKey && event.key !== null) return;
   favorites = readFavorites();
   pinnedApps = readPins();
   renderQuickApps();
+  if (lessonDialog.open) {
+    if (lessonEditor.hidden) renderLessonList();
+    else renderLessonChoices();
+  }
   update();
 });
 renderQuickApps();

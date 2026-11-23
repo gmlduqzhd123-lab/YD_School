@@ -17,11 +17,11 @@
 <link rel="icon" href="./icons/favicon-32.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="엽떡스쿨">
-<link rel="stylesheet" href="./assets/styles.css?v=14">
+<link rel="stylesheet" href="./assets/styles.css?v=15">
 <script defer src="./ys-install.js"></script>
 <script defer src="./ys-qr.js"></script>
 <script defer src="./assets/catalog-data.js?v=4"></script>
-<script defer src="./assets/catalog.js?v=14"></script>
+<script defer src="./assets/catalog.js?v=15"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -51,7 +51,10 @@
   </section>
   <section class="catalog" id="catalog" aria-labelledby="catalog-title">
     <div class="catalog-head">
-      <h2 id="catalog-title">앱 찾아보기</h2>
+      <div class="catalog-title-row">
+        <h2 id="catalog-title">앱 찾아보기</h2>
+        <button class="secondary" id="lesson-bundles-open" type="button" aria-haspopup="dialog">수업 묶음</button>
+      </div>
       <div class="catalog-search">
         <form class="search" id="search-form" role="search">
           <span class="magnifier" aria-hidden="true"></span>
@@ -124,6 +127,52 @@
     <p id="quick-status" class="copy-state" role="status"></p>
   </form>
 </dialog>
+<dialog id="lesson-bundles-dialog" class="app-dialog" aria-labelledby="lesson-bundles-title">
+  <div class="dialog-header">
+    <h2 id="lesson-bundles-title">수업 묶음</h2>
+    <button class="close" id="lesson-bundles-close" type="button" aria-label="수업 묶음 닫기" autofocus>×</button>
+  </div>
+  <div class="dialog-body">
+    <div id="lesson-list-view">
+      <p id="lesson-empty" hidden></p>
+      <div id="lesson-list" class="lesson-list"></div>
+      <div class="detail-actions">
+        <button class="primary" id="lesson-create" type="button">새 수업 묶음</button>
+        <a class="secondary" id="lesson-browse" href="#catalog" hidden>앱 찾아보기</a>
+      </div>
+      <p class="copy-state" id="lesson-list-status" role="status"></p>
+    </div>
+    <form id="lesson-editor" hidden>
+      <label class="lesson-field" for="lesson-name">묶음 이름
+        <input id="lesson-name" type="text" maxlength="60" placeholder="예: 5학년 역사 복습" required>
+      </label>
+      <div class="lesson-picker">
+        <label class="lesson-field" for="lesson-app">즐겨찾기 앱
+          <select class="topic-select" id="lesson-app"></select>
+        </label>
+        <button class="secondary" id="lesson-add" type="button">추가</button>
+      </div>
+      <ol class="lesson-order" id="lesson-order" aria-label="실행 순서"></ol>
+      <p class="copy-state" id="lesson-editor-status" role="status"></p>
+      <div class="detail-actions lesson-editor-actions">
+        <button class="primary" type="submit">묶음 저장</button>
+        <button class="secondary" id="lesson-cancel" type="button">취소</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+<template id="lesson-row-template">
+  <li>
+    <div class="lesson-row">
+      <span class="lesson-app-title"></span>
+      <div class="detail-actions">
+        <button class="secondary" data-lesson-action="up" type="button">위로</button>
+        <button class="secondary" data-lesson-action="down" type="button">아래로</button>
+        <button class="secondary" data-lesson-action="remove" type="button">빼기</button>
+      </div>
+    </div>
+  </li>
+</template>
 <dialog id="detail" class="app-dialog" aria-labelledby="detail-title">
   <div class="dialog-header">
     <div><p class="meta" id="detail-meta"></p><h2 id="detail-title"></h2></div>

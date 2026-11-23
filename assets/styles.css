@@ -87,14 +87,18 @@ h2 { margin: 0; font-size: clamp(1.3rem, 2.7vw, 1.8rem); line-height: 1.2; lette
 .card { display: flex; flex-direction: column; min-width: 0; border: 1px solid #e1d4c5; border-radius: 12px; padding: 12px; background: var(--paper); }
 .card:hover, .card:focus-within { border-color: #c3a48f; }
 .meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 6px; margin: 0 0 3px; color: #65564d; font-size: .77rem; font-weight: 750; }
+.card-title { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 .card h3 { margin: 0; line-height: 1.35; letter-spacing: -.04em; font-size: 1.07rem; overflow-wrap: anywhere; }
+.card .card-favorite { flex: none; padding-inline: .55rem; white-space: nowrap; }
 .star[aria-pressed="true"] { background: #fff0cc; border-color: #edcea2; color: #7a4e12; }
 .card .desc { margin: 5px 0 10px; color: var(--muted); font-size: .89rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .card-preview { justify-content: flex-start; gap: .65rem; margin-bottom: 8px; padding: 4px 8px; text-align: left; cursor: zoom-in; }
+.card-preview img { flex: none; width: min(88px, 25vw); height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: center top; border: 1px solid var(--line); border-radius: 5px; }
 .card-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: auto; }
 .student-link { display: inline-flex; align-items: center; min-height: 44px; padding: .3rem .65rem; border: 1px solid #9eb7a2; border-radius: 8px; background: #edf4ec; color: #285239; font-size: .86rem; font-weight: 800; }
 .student-link:hover { background: #e1eee1; text-decoration: underline; text-underline-offset: .18em; }
 .detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.card-share { -webkit-tap-highlight-color: transparent; }
+.card :is(.card-favorite, .card-preview, .card-share) { -webkit-tap-highlight-color: transparent; }
 .primary, .secondary { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: .45rem .72rem; border-radius: 8px; font-size: .86rem; font-weight: 800; border: 1px solid transparent; }
 .card-actions > :is(.primary, .secondary) { padding-inline: .25rem; text-align: center; }
 .primary { background: var(--brick); color: #fffaf0; border-color: var(--brick); }

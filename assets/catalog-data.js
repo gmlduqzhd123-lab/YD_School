@@ -1145,42 +1145,6 @@ const apps = [
     }
   },
   {
-    "id": "hallyoswim",
-    "title": "Hallyoswim 수영부 관리",
-    "creator": "엽쌤스쿨",
-    "topics": [
-      "교사 업무",
-      "체육"
-    ],
-    "desc": "여수한려초 수영부의 선수단과 훈련을 관리하는 도구",
-    "access": "로그인 필요",
-    "note": "훈련 및 선수단 관리 기능에 로그인해야 합니다.",
-    "tip": "수영부 운영 담당자가 훈련과 선수단 관리에 사용합니다.",
-    "keys": [
-      "업무용"
-    ],
-    "url": "https://hallyo.vercel.app/",
-    "art": "writing",
-    "icon": "≡",
-    "palette": [
-      "#d7cced",
-      "#5a4b85",
-      "#9a8ab8"
-    ],
-    "tags": [
-      "수영부 운영 담당자"
-    ],
-    "steps": [
-      "관리 기능은 권한이 있는 계정으로 로그인하세요.",
-      "훈련과 선수단 메뉴에서 필요한 항목을 찾으세요."
-    ],
-    "linkAudit": {
-      "result": "checked",
-      "checkedAt": "2026-11-22",
-      "lastSuccessAt": "2026-11-22"
-    }
-  },
-  {
     "id": "class-acave",
     "title": "수업서랍",
     "creator": "엽쌤스쿨",
@@ -1507,34 +1471,6 @@ const apps = [
         "url": "https://gmlduqzhd123-lab.github.io/Volleyball/#/videos"
       }
     ]
-  },
-  {
-    "id": "my-home",
-    "title": "순천집 ZIP",
-    "creator": "엽쌤스쿨",
-    "topics": [
-      "놀이·생활"
-    ],
-    "desc": "순천 아파트 실거래를 검색하고 매매 가격을 비교하는 도구",
-    "access": "웹앱",
-    "note": "자세한 이용 조건은 원본 앱에서 확인하세요.",
-    "tip": "단지별 거래 내역을 찾아 가격과 면적을 비교해 보세요.",
-    "keys": [
-      "기타"
-    ],
-    "url": "https://gmlduqzhd123-lab.github.io/My-home/",
-    "art": "",
-    "icon": "◇",
-    "palette": [
-      "#f3cda6",
-      "#845635",
-      "#b58a60"
-    ],
-    "linkAudit": {
-      "result": "checked",
-      "checkedAt": "2026-11-22",
-      "lastSuccessAt": "2026-11-22"
-    }
   }
 ];
 const thumbnails = {
@@ -1571,7 +1507,6 @@ const thumbnails = {
   "padlet": "./assets/preview-padlet.webp",
   "hwp": "./assets/preview-hwp.webp",
   "making-film": "./assets/preview-making-film.webp",
-  "hallyoswim": "./assets/preview-hallyoswim.webp",
   "class-acave": "./assets/preview-class-acave.webp",
   "teacher-game": "./assets/preview-teacher-game.webp",
   "destiny": "./assets/preview-destiny.webp",
@@ -1582,8 +1517,7 @@ const thumbnails = {
   "acaraca": "./assets/preview-acaraca.webp",
   "acapella-maker": "./assets/preview-acapella-maker.webp",
   "ysschool": "./assets/preview-ysschool.webp",
-  "volleyball": "./assets/preview-volleyball.webp",
-  "my-home": "./assets/preview-my-home.webp"
+  "volleyball": "./assets/preview-volleyball.webp"
 };
 const studentQRs = {
   "sweat-expedition": "./assets/qr-sweat-expedition.png",

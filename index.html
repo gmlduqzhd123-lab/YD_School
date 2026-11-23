@@ -17,11 +17,11 @@
 <link rel="icon" href="./icons/favicon-32.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="엽떡스쿨">
-<link rel="stylesheet" href="./assets/styles.css?v=18">
+<link rel="stylesheet" href="./assets/styles.css?v=19">
 <script defer src="./ys-install.js"></script>
 <script defer src="./ys-qr.js"></script>
-<script defer src="./assets/catalog-data.js?v=5"></script>
-<script defer src="./assets/catalog.js?v=17"></script>
+<script defer src="./assets/catalog-data.js?v=6"></script>
+<script defer src="./assets/catalog.js?v=18"></script>
 </head>
 <body>
 <a class="skip" href="#catalog">앱 검색으로 건너뛰기</a>
@@ -275,8 +275,15 @@
 </dialog>
 <template id="card-template">
   <article class="card">
-    <h3></h3>
+    <div class="card-title">
+      <h3></h3>
+      <button class="secondary star card-favorite" type="button" aria-pressed="false"></button>
+    </div>
     <p class="desc"></p>
+    <button class="secondary card-preview" type="button" aria-haspopup="dialog">
+      <img alt="" width="88" height="50" loading="lazy" decoding="async" hidden>
+      <span>앱 화면 미리보기</span>
+    </button>
     <div class="card-actions">
       <a class="primary" target="_blank" rel="noopener noreferrer"></a>
       <button class="secondary card-detail" type="button" aria-haspopup="dialog">활용 보기</button>

@@ -186,7 +186,7 @@ function setStar(button, app) {
   button.title = saved ? "즐겨찾기 해제" : "즐겨찾기 추가";
 }
 
-function updateFavorite(button, app) {
+function updateFavorite(app) {
   const wasSaved = favorites.delete(app.id);
   if (!wasSaved) favorites.add(app.id);
   const oldPins = pinnedApps;
@@ -198,8 +198,13 @@ function updateFavorite(button, app) {
   } catch {
     message += " 현재 탭에서만 적용됩니다.";
   }
-  setStar(button, app);
-  if (paramsNow().get("saved") === "1" && wasSaved) update();
+  const cardFavorite = document.getElementById("card-favorite-" + app.id);
+  if (cardFavorite) setStar(cardFavorite, app);
+  if (detailApp === app) setStar(detailFavorite, app);
+  if (paramsNow().get("saved") === "1" && wasSaved) {
+    update();
+    if (!detail.open) favoriteFilter.focus();
+  }
   renderQuickApps();
   favoriteStatus.textContent = message;
 }
@@ -278,7 +283,7 @@ function renderLessonList(openId = lessonList.querySelector("details[open]")?.da
   lessonEmpty.hidden = lessons.length > 0 && favorites.size > 0;
   lessonEmpty.textContent = favorites.size > 0
     ? "즐겨찾기한 앱을 골라 수업 순서대로 묶어보세요."
-    : "앱의 활용 보기에서 즐겨찾기에 추가하면 새 묶음을 만들 수 있어요.";
+    : "앱 카드에서 즐겨찾기에 추가하면 새 묶음을 만들 수 있어요.";
   lessonList.replaceChildren(...lessons.map(lesson => {
     const bundle = document.createElement("details");
     bundle.className = "lesson-bundle";
@@ -449,11 +454,29 @@ function accessLabels(app) {
   return [...new Set(labels)];
 }
 
+function setThumbnail(image, app) {
+  const src = thumbnails[app.id];
+  image.hidden = !src;
+  image.onerror = () => { image.hidden = true; };
+  if (src) image.src = src;
+  else image.removeAttribute("src");
+}
+
 function makeCard(app) {
   const card = template.content.firstElementChild.cloneNode(true);
   card.querySelector("h3").textContent = app.title;
   card.querySelector(".desc").textContent = app.desc;
   configureLink(card.querySelector(".card-actions .primary"), app, "앱 열기");
+
+  const favorite = card.querySelector(".card-favorite");
+  favorite.id = "card-favorite-" + app.id;
+  setStar(favorite, app);
+  favorite.addEventListener("click", () => updateFavorite(app));
+
+  const preview = card.querySelector(".card-preview");
+  preview.setAttribute("aria-label", app.title + " 앱 화면 미리보기");
+  setThumbnail(preview.querySelector("img"), app);
+  preview.addEventListener("click", () => showPreview(app, preview));
 
   const opener = card.querySelector(".card-detail");
   opener.setAttribute("aria-label", app.title + " 활용 보기");
@@ -718,10 +741,7 @@ function displayDetail(app) {
   document.querySelector("#detail-access").textContent = app.note;
   document.querySelector("#detail-tip").textContent = app.tip;
   configureLink(document.querySelector("#detail-link"), app);
-  const thumbnail = thumbnails[app.id];
-  detailThumbnail.hidden = !thumbnail;
-  if (thumbnail) detailThumbnail.src = thumbnail;
-  else detailThumbnail.removeAttribute("src");
+  setThumbnail(detailThumbnail, app);
   const steps = app.steps || [];
   document.querySelector("#detail-steps-label").hidden = steps.length === 0;
   document.querySelector("#detail-steps-block").hidden = steps.length === 0;
@@ -767,12 +787,11 @@ function displayDetail(app) {
 document.querySelector("#detail-share").addEventListener("click", () => {
   if (detailApp) openShare(detailApp);
 });
-detailThumbnail.addEventListener("error", () => { detailThumbnail.hidden = true; });
 detailPreview.addEventListener("click", () => {
   if (detailApp) showPreview(detailApp, detailPreview);
 });
 detailFavorite.addEventListener("click", () => {
-  if (detailApp) updateFavorite(detailFavorite, detailApp);
+  if (detailApp) updateFavorite(detailApp);
 });
 
 function studentShortcut(app) {
@@ -1038,7 +1057,7 @@ function update() {
   empty.hidden = shown.length > 0;
   if (shown.length === 0) {
     emptyMessage.textContent = savedOnly && favorites.size === 0
-      ? "아직 즐겨찾기한 앱이 없어요. 활용 보기에서 즐겨찾기에 추가해 보세요."
+      ? "아직 즐겨찾기한 앱이 없어요. 앱 카드에서 즐겨찾기에 추가해 보세요."
       : "조건에 맞는 앱이 없어요.";
     showSearchRecovery(queryMatches, filters, active, q);
   } else {
